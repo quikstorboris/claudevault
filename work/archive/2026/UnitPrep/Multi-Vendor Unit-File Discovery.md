@@ -98,3 +98,5 @@ Created a throwaway client through the actual UI (via the in-app Browser pane) t
 ## Status
 
 The 2026-07-23/24 continuation described above (master-file unification, Storage Commander, bulk-confirm, uncommon-group-name detection, navigation redesign) was **committed 2026-07-25** as part of `unitprep-api@ace8ff6` / `unitprep-ui@0cd2130` — see [[Validation & Warnings Redesign]] for the commit details (both repos' discovery and validation work landed together in one commit each, not split further).
+
+**Superseded 2026-08-18**: the per-tool, hardcoded `VendorFormat` registry this note describes (`unit-group::format::{QSX, STORAGE_COMMANDER, DOOR_SWAP}`) was generalized into one shared, DB-backed registry read by both Group Prep and dedup — see [[Shared Vendor-Format Registry (Easy Storage Solutions)]]. The recognition *mechanics* documented here (recognize-then-confirm flow, hand-authored default mappings, superset-signature ordering) still hold; only where the data lives changed.

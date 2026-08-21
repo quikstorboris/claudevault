@@ -119,7 +119,9 @@ This crate has a standing, explicit convention (`RULES.md`'s own header: *"when 
 
 ## Verdict
 
-Dedup is now in full agreement with Sarah's reasoning across two independent rounds of cross-checking, with exactly two *deliberate, documented* divergences remaining (CompanyName category/wording; token-sort typo-similarity, a strict improvement over her skill, not a gap) — both decided explicitly with Boris, not silently left unreconciled. Five real fixes shipped this session (separate-tenants mis-framing, legacy phone-prefix exclusion, related-tenant household restructuring, Muise-typo wording, placeholder/phone-digit guardrails), all verified against the actual test suite and/or the real production xlsx, plus the crate's own rules documentation brought current. No open bugs against this dataset as of 2026-08-10. Not yet committed or pushed as of this note.
+Dedup is now in full agreement with Sarah's reasoning across two independent rounds of cross-checking, with exactly two *deliberate, documented* divergences remaining (CompanyName category/wording; token-sort typo-similarity, a strict improvement over her skill, not a gap) — both decided explicitly with Boris, not silently left unreconciled. Five real fixes shipped this session (separate-tenants mis-framing, legacy phone-prefix exclusion, related-tenant household restructuring, Muise-typo wording, placeholder/phone-digit guardrails), all verified against the actual test suite and/or the real production xlsx, plus the crate's own rules documentation brought current. No open bugs against this dataset as of 2026-08-10.
+
+**Correction (2026-08-21)**: this was recorded above as "not yet committed or pushed as of this note" — confirmed via a fresh clone of `origin/main` (see [[New Laptop Migration — QSLP14]]) that all five fixes actually landed as commits `b2fa2b6`/`b3e016e`/`823a1eb`/`b3f83eb` (2026-08-13/14), well before that clone was made. The "not yet committed" state never got corrected here once it actually shipped — see [[Dedup Tool Index]] for the same stale claim, fixed in the same pass.
 
 ## Related
 

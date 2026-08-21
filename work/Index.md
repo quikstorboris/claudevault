@@ -29,15 +29,17 @@ Incident docs live in `work/incidents/`. See `Incidents.base` for overview.
 
 ## Recently Completed
 
--
+- [[New Laptop Migration — QSLP14]] — moved from `QSLP15` to `QSLP14` mid-session; re-cloned both repos (full history intact on `origin/main`, nothing lost), frontend fully verified (native Linux Node via `nvm`, 333/333 vitest passing — a strict improvement on the old setup). Backend build still blocked on missing `pkg-config`/`libssl-dev` — needs Boris's own sudo, see Open Questions.
 
 ## Completed
 
 ### Current Quarter
-- [[Dedup Tool Index|UnitPrep — Dedup Tool]] — duplicate-tenant-check module, built/shipped as its own `unitprep-dedup` crate with full UI; full build history split across 10 notes in `work/archive/2026/UnitPrep/Dedup Tool/`.
+- [[Dedup Tool Index|UnitPrep — Dedup Tool]] — duplicate-tenant-check module, built/shipped as its own `unitprep-dedup` crate with full UI; full build history split across domain notes in `work/archive/2026/UnitPrep/Dedup Tool/`.
 - [[Code Review Watchlist]] — architecture punch-list closed 2026-07-17; a 2026-07-23 follow-up found and fixed a real CSV-injection gap plus 3 frontend state-scoping bugs. Full item-by-item log in [[Code Review Watchlist - Findings]].
 - [[Full Review & 9-Milestone Refactor]] — full front+back codebase review (~36 findings) then all 9 milestones executed and pushed on both repos, 2026-07-24.
-- [[Multi-Vendor Unit-File Discovery]] — QSX/DoorSwap/Storage Commander vendor registry for Group Prep's unit-file discovery; committed and pushed 2026-07-25. (Was miscategorized as active/uncommitted until corrected 2026-07-28 — the work and its tests were already live on `main`.)
+- [[Multi-Vendor Unit-File Discovery]] — QSX/DoorSwap/Storage Commander vendor registry for Group Prep's unit-file discovery; committed and pushed 2026-07-25. (Was miscategorized as active/uncommitted until corrected 2026-07-28 — the work and its tests were already live on `main`.) Superseded 2026-08-18 by [[Shared Vendor-Format Registry (Easy Storage Solutions)]] — same recognition mechanics, generalized off hardcoded consts onto one shared, DB-backed registry.
+- [[Shared Vendor-Format Registry (Easy Storage Solutions)]] — generalized vendor recognition (Group Prep + dedup) into a shared `client_ops.vendor_format` registry, to onboard Easy Storage Solutions tenant exports; committed and pushed 2026-08-18.
+- [[Westpark Cross-Check — Placeholder, Wording, and XLSX Fixes]] — a second colleague cross-check (Westpark) fixed a regressed placeholder bug, misleading typo-variant wording, and real XLSX export formatting defects; committed and pushed 2026-08-20.
 - [[Validation & Warnings Redesign]] — validation/warnings pipeline architecture (exclude vs. per-check acknowledge); committed and pushed 2026-07-25, same commit batch as the discovery work above.
 - [[Post-Refactor Audit]] — 2nd CTO-grade pre-auth review, all 5 milestones done (incl. a real CORS bug found+fixed+verified); organized into commits and shipped as **v1.1.1** on both repos, 2026-07-28. Full detail in [[Post-Refactor Audit - Details]], commit-by-commit breakdown in [[Post-Refactor Audit - Shipped as v1.1.1]].
 - [[Frontend Test Tooling Setup]] — Vitest/RTL + Playwright + coverage tooling wired into `unitprep-ui` (had zero automated tests before this); 18 unit/component tests + 1 E2E test (key={sessionId} regression) all passing. Shipped as part of **v1.1.2** alongside backend property-based/HTTP-integration/race tests and 2 real crash-bug fixes found through fuzzing — full account in [[Shipped as v1.1.2]].
@@ -73,6 +75,8 @@ Incident docs live in `work/incidents/`. See `Incidents.base` for overview.
 ## Open Questions
 
 - **Significant, deliberately deferred**: the two `#[ignore]`'d real-PII fixture tests in `unitprep-api/dedup/tests/reference_fixtures.rs` never run automatically (no CI exists). Revisit once the rest of the outstanding, non-deferred test/refactor work is complete — not before. See [[Dedup Tool Index]].
+- On the new laptop (`QSLP14`): install `pkg-config`/`libssl-dev` (`sudo apt-get install -y pkg-config libssl-dev`, needs Boris's own sudo password) so `cargo build`/`test`/`sqlx-cli` work again, then restore `.env.local` from wherever it's actually backed up (not documented anywhere in this vault — worth fixing once found). See [[New Laptop Migration — QSLP14]].
+- Duplicate rows across dedup's flagged/typo-variant/related-tenant report sections — the same tenant can independently appear in all three with no cross-reference between them. Two options on the table (de-dupe to one row per unit, or split into separate tabs), neither picked yet. See [[Westpark Cross-Check — Placeholder, Wording, and XLSX Fixes]].
 
 ## Archive
 
