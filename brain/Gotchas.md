@@ -8,6 +8,10 @@ tags:
 
 Things that have bitten before and will bite again.
 
+## A `.git` folder found inside a raw file-mirror backup may be empty
+
+A backup folder having a `.git` directory doesn't mean it has history -- a byte-for-byte file mirror can carry an empty `git init` skeleton along with everything else. Confirm with `find .git/objects -type f | wc -l` or `git fsck` before trusting it as a source of history to recover. Full incident and the rest of the migration steps in [[Laptop Migration]].
+
 ## Verify a parser's real output by running it — don't re-derive it by hand from raw XML
 
 Found 2026-08-14 while diagnosing why the Template Tagger found zero candidates in a real filled document (see [[2026-08-14-filled-document-field-detection-shipped|Filled-document field detection]]). Manually extracting `<w:t>` text from `first_late_notice.docx`'s raw `document.xml` with a quick Python regex made it look like `docx_surgeon::read_docx` concatenates paragraphs with **zero separator** ("...SERVICE300 RODGERS BLDG..." — no space, no newline) — which would have meant a real, invasive change to `docx-surgeon`'s core text-flattening model was needed before any label-boundary detection could work on free text at all.

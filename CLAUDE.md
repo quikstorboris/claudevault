@@ -448,7 +448,7 @@ Each law exists because its absence caused real correction work in vaults runnin
 
 - Never modify `.obsidian/` config files unless explicitly asked.
 - Preserve existing frontmatter when editing notes.
-- Git sync is handled by the user's preferred method (obsidian-git, manual commits, etc.) -- don't configure git hooks or auto-commit.
+- **Claude may commit and push the vault at its own discretion** whenever content reaches a coherent, finalized chunk (a note or a related set of notes that's actually done, not mid-edit) -- no need to wait to be asked. Still don't configure git hooks or auto-commit infrastructure; this is a manual judgment call each time, not automation. Write a clear, descriptive commit message and skim `git status`/`git diff` for anything secret-looking before pushing, same as any other repo.
 - When asked to "remember" something, write to the relevant `brain/` topic note with a link to context. Never create memory files in `~/.claude/` -- they are not git-tracked.
 - Prefer Obsidian CLI over filesystem when Obsidian is **already** running. On macOS, the first `obsidian` call launches the Electron app (visible window flash) if no instance is running — open Obsidian once at session start, then subsequent calls forward args silently. In non-interactive contexts where you can't guarantee Obsidian is open (background hooks, automation), prefer filesystem reads.
 - **Always invoke Obsidian skills via the Skill tool** before doing vault work. Load `obsidian-markdown` when creating/editing `.md` files. Load `obsidian-cli` when running vault commands. Load `obsidian-bases` or `json-canvas` when working with those file types.
