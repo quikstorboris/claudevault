@@ -46,10 +46,15 @@ wsl.exe -e bash -lc 'export PATH="$HOME/.nvm/versions/node/v24.18.0/bin:$PATH" &
 ```
 If `node --version` doesn't print the expected `nvm`-managed version, the rest of the command's output cannot be trusted. This generalizes beyond `unitprep-ui`: any Windows-hosted session invoking a WSL repo's npm toolchain via a fresh non-interactive `bash -lc` should assume PATH is wrong until proven otherwise, not the other way around.
 
+**Same root cause hit again 2026-08-21, different symptom, on the new laptop (`QSLP14`)**: a bare `node`/`npm` in a fresh `bash -lc` wasn't silently wrong here, it was simply `command not found` — this distro's `nvm` isn't loaded by `.bashrc` in a way a non-interactive `bash -lc` picks up at all, so there was no Windows fallback to silently mask (no Windows Node was even installed on this machine). Same fix, explicit every time: `export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"` before any `node`/`npm`/`npx` call. See [[New Laptop Migration — QSLP14]].
+
 ## This laptop has ~2GB of RAM headroom — local model inference and the vault's own test suite will freeze it
 
 Established 2026-07-30 by freezing the machine hard enough to need a cold reboot.
 Read this before running anything heavy.
+
+> [!warning] This is `QSLP15`. As of 2026-08-21 Boris is on a new machine, `QSLP14` — everything below is unverified for it.
+> Not re-established from scratch here; the **standing rules** (no full vault test suite, no unbounded `qmd` reranking, no local model servers) are cheap enough to keep following regardless of hardware, so they still apply below. But the specific hardware facts (Dell Latitude 5550, 16GB RAM, no dedicated VRAM, the exact freeze cause) describe the *old* machine and should not be assumed true of the new one. What's actually known about `QSLP14` so far, from WSL's own view only (not full Windows host telemetry — `(TBC)`): 15GB RAM visible to WSL2, 22 logical CPUs, ~13GB free at the time it was checked. Whether it has the same low-RAM-headroom problem is genuinely unknown — re-verify before assuming either way, and update this note (not just this callout) once it is.
 
 **The hardware**: Dell Latitude 5550, Intel Core Ultra 7 155U (a low-power
 U-series part), **16GB RAM**, Intel integrated graphics with **no dedicated
