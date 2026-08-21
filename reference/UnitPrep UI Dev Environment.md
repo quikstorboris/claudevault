@@ -6,8 +6,8 @@ tags: [reference, environment, wsl, unitprep, nextjs]
 
 # UnitPrep UI Dev Environment
 
-> [!warning] Written for `QSLP15` (Ubuntu-22.04) — node resolution below doesn't apply on `QSLP14`
-> As of 2026-08-21, on the new laptop, real checkouts live at `~/Development/unitprep-ui` (not `~/Documents/`, used below), and Node is genuinely native Linux via `nvm` (`export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"`) — no VS-Code-server symlink hack needed at all, and `npm install`/`npx vitest run` both work directly (333/333 tests passing, confirmed). See [[New Laptop Migration — QSLP14]]. **Not yet re-verified on this machine**: whether the Turbopack worker-spawn failure documented below still reproduces — a different Node runtime entirely might not hit the same bug. Re-check before trusting the `--webpack` workaround is still necessary here.
+> [!warning] Written for `QSLP15` (Ubuntu-22.04) — node resolution and Turbopack sections below are historical on `QSLP14`
+> As of 2026-08-21, on the new laptop, real checkouts live at `~/Development/unitprep-ui` (not `~/Documents/`, used below), and Node is genuinely native Linux via `nvm` (`export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"`) — no VS-Code-server symlink hack needed at all, and `npm install`/`npx vitest run` both work directly (333/333 tests passing, confirmed). **Confirmed 2026-08-21**: the Turbopack worker-spawn failure documented below does NOT reproduce here — plain `npm run dev` (no `--webpack`) starts clean. See [[New Laptop Migration — QSLP14]] and the "Resolved on `QSLP14`" section below. The node-symlink and Turbopack-failure sections below are kept for historical reference (in case a future machine hits the same class of bug), but neither applies to day-to-day work on this machine — use plain `npm run dev`, no workaround needed.
 
 `unitprep-ui`'s WSL environment (Ubuntu-22.04) has **no Linux-native Node.js on PATH** — `which node` returns nothing. `npm`/`npx` resolve to the Windows install via WSL's cross-boundary interop, which breaks (a bare cmd.exe "UNC paths are not supported" error) when invoked with a WSL-side working directory from a non-interactive `wsl.exe -d Ubuntu-22.04 -- bash -lc "..."` call (as opposed to a real interactive WSL terminal).
 
@@ -26,9 +26,15 @@ ln -sf ~/.vscode-server/bin/*/node /mnt/c/Users/bmaksimov/bin/node
 
 (the glob resolves to whatever build-hash directory is currently installed). Verify with `node --version` before relying on it for a `next dev`/`next build` launch.
 
-## Known-unresolved: Turbopack worker-spawn failure
+## Resolved on `QSLP14` (2026-08-21) — was: known-unresolved Turbopack worker-spawn failure
 
-Even with `node` resolvable, **Turbopack's dev-mode worker-pool spawn is still broken** in this environment — `next dev` (Turbopack, the default) fails every route compile with:
+**Confirmed fixed, not just newly-unbroken by luck**: `npm run dev` on the new laptop starts plain `next dev` (Turbopack, no `--webpack` flag) and comes up clean — `✓ Ready in 512ms`, no panic, serves normally. This retroactively confirms the "leading unconfirmed theory" below: the failure was tied specifically to VS Code Remote-WSL's bundled Node (`~/.vscode-server/bin/<hash>/node`) and whatever path-caching mechanism Turbopack's pooled-process spawner used to find it — a mechanism this laptop's setup doesn't have at all, since Node here is a genuinely native `nvm`-managed install with no VS-Code-server dependency in the loop. Never actually root-caused to the exact mechanism (the investigation below was never finished), but the fix that mattered in practice was "stop using that Node resolution path entirely," which happened here as a side effect of the laptop migration, not a deliberate fix.
+
+**Practical effect**: the `--webpack` fallback documented below is no longer necessary on this machine. Leaving the historical investigation in place below since the underlying Turbopack/Node-resolution mechanism itself is still not fully understood — worth rereading if this class of failure ever resurfaces on a future machine.
+
+### Original investigation (`QSLP15`, historical)
+
+Even with `node` resolvable, **Turbopack's dev-mode worker-pool spawn was broken** in that environment — `next dev` (Turbopack, the default) failed every route compile with:
 
 ```
 FATAL: An unexpected Turbopack error occurred.
@@ -65,6 +71,9 @@ Diagnostic groundwork before this: a separate "discovery took 7-10 seconds" comp
 
 ## Practical recipe: starting the dev server non-interactively
 
+> [!warning] `-d Ubuntu-22.04`, `~/Documents/`, and `--webpack` below are `QSLP15`-specific
+> On `QSLP14`, use `-d Ubuntu` (or omit `-d` entirely — it's the only registered distro), `~/Development/unitprep-ui`, and drop `--webpack` (plain Turbopack works — see [[#Resolved on QSLP14 (2026-08-21) — was known-unresolved Turbopack worker-spawn failure|above]]). See [[WSL Execution Technique]] for the current distro/path reference.
+
 ```bash
 wsl.exe -d Ubuntu-22.04 -- bash -lc "cd ~/Documents/unitprep-ui && setsid node node_modules/.bin/next dev --webpack > /tmp/unitprep-ui-dev.log 2>&1 < /dev/null &
 sleep 2
@@ -77,7 +86,7 @@ Use `setsid`, not just `nohup ... &` + `disown` — plain nohup/disown was obser
 
 ## tsc/eslint verification recipe
 
-Works fine, no Turbopack involved:
+Works fine, no Turbopack involved. (`Ubuntu-22.04`/`Documents` below are `QSLP15`-specific — on `QSLP14` use `\\wsl.localhost\Ubuntu\home\bmaksimov\Development\unitprep-ui`, per [[WSL Execution Technique]].)
 
 ```powershell
 Set-Location "\\wsl.localhost\Ubuntu-22.04\home\bmaksimov\Documents\unitprep-ui"
@@ -113,3 +122,4 @@ A stray NUL byte can silently end up inside `ScanResultsPage.tsx` from a normal 
 - [[UnitPrep File Locations]]
 - [[WSL Execution Technique]]
 - [[UnitPrep Architecture Overview]]
+- [[New Laptop Migration — QSLP14]] — where the Turbopack fix (as an unintended side effect) and the distro/path corrections came from

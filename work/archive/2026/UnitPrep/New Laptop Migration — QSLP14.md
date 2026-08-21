@@ -61,6 +61,7 @@ Boris moved to a new laptop (`QSLP14`, replacing `QSLP15`) mid-session, discover
 - `unitprep-api`: after `pkg-config`/`libssl-dev` landed, `cargo test --workspace` in the real `~/Development/unitprep-api` checkout — every crate green, 0 failed.
 - Python on the Windows side (not WSL) also confirmed working for this machine: `python`/`python3` both resolve to 3.14.7 via the WindowsApps alias, `pip` 26.2.1, a basic script runs fine — same shape as the old laptop's setup (see [[Python Environment]]), just a newer patch version.
 - The redundant `~/Documents/unitprep-api`/`unitprep-ui` clones this session created were deleted (confirmed clean `git status` in both first, per Boris's explicit go-ahead) — `~/Development/` is the one real checkout of each repo on this machine.
+- `unitprep-ui`'s previously-unresolved [[UnitPrep UI Dev Environment|Turbopack worker-spawn failure]] does not reproduce here — Boris's own `npm run dev` output showed plain Turbopack (no `--webpack`) starting clean (`✓ Ready in 512ms`). Likely explanation: that bug was tied to VS Code Remote-WSL's bundled Node, and this machine's Node is a genuinely native `nvm` install with no VS-Code-server dependency in the loop — never fully root-caused, but the mechanism that triggered it isn't present here.
 
 ## Open
 
@@ -71,7 +72,7 @@ Boris moved to a new laptop (`QSLP14`, replacing `QSLP15`) mid-session, discover
 - [[WSL Execution Technique]] — the living reference this note's facts feed into (distro name, repo path, `nvm`/`pkg-config` gotchas all added there).
 - [[UnitPrep File Locations]]
 - [[Python Environment]] — same Windows-side Python setup re-confirmed on this machine, newer patch version.
-- [[UnitPrep UI Dev Environment]] — its whole node-symlink workaround was `QSLP15`-specific; flagged as superseded here, Turbopack behavior on the new machine still unverified.
+- [[UnitPrep UI Dev Environment]] — its whole node-symlink workaround was `QSLP15`-specific and superseded here; confirmed 2026-08-21 that the Turbopack worker-spawn failure documented there also does not reproduce on this machine (plain `npm run dev` starts clean).
 - [[Dedup Tool Index]] — status correction landed there as part of this note.
 - [[Shared Vendor-Format Registry (Easy Storage Solutions)]]
 - [[Westpark Cross-Check — Placeholder, Wording, and XLSX Fixes]]
