@@ -6,6 +6,9 @@ tags: [reference, environment, wsl, unitprep, nextjs]
 
 # UnitPrep UI Dev Environment
 
+> [!warning] Written for `QSLP15` (Ubuntu-22.04) — node resolution below doesn't apply on `QSLP14`
+> As of 2026-08-21, on the new laptop, real checkouts live at `~/Development/unitprep-ui` (not `~/Documents/`, used below), and Node is genuinely native Linux via `nvm` (`export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"`) — no VS-Code-server symlink hack needed at all, and `npm install`/`npx vitest run` both work directly (333/333 tests passing, confirmed). See [[New Laptop Migration — QSLP14]]. **Not yet re-verified on this machine**: whether the Turbopack worker-spawn failure documented below still reproduces — a different Node runtime entirely might not hit the same bug. Re-check before trusting the `--webpack` workaround is still necessary here.
+
 `unitprep-ui`'s WSL environment (Ubuntu-22.04) has **no Linux-native Node.js on PATH** — `which node` returns nothing. `npm`/`npx` resolve to the Windows install via WSL's cross-boundary interop, which breaks (a bare cmd.exe "UNC paths are not supported" error) when invoked with a WSL-side working directory from a non-interactive `wsl.exe -d Ubuntu-22.04 -- bash -lc "..."` call (as opposed to a real interactive WSL terminal).
 
 **A real Linux node binary does exist**, bundled by the VS Code Remote-WSL extension: `~/.vscode-server/bin/*/node` (resolve the `*` at runtime — it's a build-id hash that changes). This is what actually runs `unitprep-ui`'s `next dev` in normal (interactive VS Code) use.

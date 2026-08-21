@@ -8,8 +8,8 @@ tags: [reference, environment, wsl, unitprep]
 
 Discovered 2026-07-21 while building the Onboarding Orchestrator auth schema migrations (see [[Auth & Persistence/Database Schema|Database Schema]]). The Bash tool in this session runs in Git Bash/MSYS on Windows (`C:\Users\bmaksimov`), a different shell than the WSL Ubuntu environment Boris actually develops in — but the same physical machine has a running WSL distro reachable via `wsl.exe`, which is where `unitprep-api`/`unitprep-ui`, `.env.local`, `psql`, `sqlx-cli`, and the real Neon dev-branch access actually live.
 
-> [!warning] The distro name and machine are per-laptop, not a fixed fact
-> Originally `Ubuntu-22.04` on `QSLP15`. **As of 2026-08-21, on `QSLP14`, it's plain `Ubuntu` (Ubuntu 26.04 base)** — a new laptop got a freshly-provisioned distro with a different name, and every `-d Ubuntu-22.04` invocation below silently stopped resolving. Check first: `wsl.exe -l -v` (or, from inside a session, just try the plain distro-less form — a single registered distro is used as the default). See [[New Laptop Migration — QSLP14]] for the full story and what else a fresh distro needs redone (git identity, re-cloning both repos, `pkg-config`/`libssl-dev`, `nvm`).
+> [!warning] The distro name, machine, and repo path are all per-laptop, not a fixed fact
+> Originally `Ubuntu-22.04` on `QSLP15`, repos at `~/Documents/`. **As of 2026-08-21, on `QSLP14`, the distro is plain `Ubuntu` (Ubuntu 26.04 base) and the real checkouts live at `~/Development/unitprep-api` / `~/Development/unitprep-ui`** — a new laptop got a freshly-provisioned distro with a different name, and every `-d Ubuntu-22.04` / `~/Documents/...` reference below is stale. Check the distro first: `wsl.exe -l -v` (or, from inside a session, just try the plain distro-less form — a single registered distro is used as the default). Check the repo path with `ls ~/Development/ ~/Documents/` before assuming either — a session that skipped this once ended up cloning a second, redundant copy into the wrong one. See [[New Laptop Migration — QSLP14]] for the full story and what else a fresh distro needs redone (git identity, `pkg-config`/`libssl-dev`, `nvm`).
 
 ## The working pattern
 
@@ -22,10 +22,10 @@ Discovered 2026-07-21 while building the Onboarding Orchestrator auth schema mig
 
 ```bash
 # Step 1: write the script, escaping every $ that should survive literally
-wsl.exe -d Ubuntu -- bash -lc 'cat > ~/Documents/unitprep-api/some_script.sh << '"'"'EOF'"'"'
+wsl.exe -d Ubuntu -- bash -lc 'cat > ~/Development/unitprep-api/some_script.sh << '"'"'EOF'"'"'
 #!/usr/bin/env bash
 set -euo pipefail
-cd ~/Documents/unitprep-api
+cd ~/Development/unitprep-api
 DEV_URL=\$(grep "^NEON_DEV_DATABASE_URL=" .env.local | cut -d "=" -f2-)
 echo "LEN=\${#DEV_URL}"
 sqlx migrate run --database-url "\$DEV_URL"
@@ -33,7 +33,7 @@ EOF
 '
 
 # Step 2: execute it plainly, with MSYS path conversion disabled
-MSYS_NO_PATHCONV=1 wsl.exe -d Ubuntu -- bash -lc 'bash /home/bmaksimov/Documents/unitprep-api/some_script.sh'
+MSYS_NO_PATHCONV=1 wsl.exe -d Ubuntu -- bash -lc 'bash /home/bmaksimov/Development/unitprep-api/some_script.sh'
 ```
 
 Note the `'"'"'EOF'"'"'` pattern for the heredoc delimiter — even though the delimiter's quoting itself may or may not survive the mangling, **backslash-escaping every `$` in the body is what actually matters**; it works regardless of whether the outer quoting comes through intact.

@@ -14,6 +14,8 @@ Verified working end-to-end by running the actual `duplicate_tenant_check.py` sc
 
 **No special setup needed going forward** for Python scripts on this machine — just invoke `python <script>` via Bash or PowerShell directly.
 
+**Re-confirmed 2026-08-21 on the new laptop (`QSLP14`, see [[New Laptop Migration — QSLP14]])**: same shape, `python`/`python3` resolve (this time via the WindowsApps alias path specifically, forwarding to a real install at `AppData\Local\Python\pythoncore-3.14-64` — not the old broken Store-stub behavior this note originally replaced), `pip` 26.2.1, a basic script runs. Just a newer patch version (3.14.7 vs. 3.14.6) — this is evidently per-machine state, not something that carries over with a laptop swap, so it's worth a quick re-check like this on any future migration too.
+
 ## Related
 
 - [[UnitPrep File Locations]]
