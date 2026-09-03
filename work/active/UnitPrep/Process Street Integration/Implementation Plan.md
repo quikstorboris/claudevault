@@ -54,9 +54,9 @@ Full design conversation, not just the stub below — captured here since this i
 
 **A data-quality reality to design for, not solve yet**: some real clients don't understand or maintain the company/business vs. facility/location distinction at all — to them, everything is one location, and Intake forms get filled out accordingly ("half-assed" per Boris). The business/location separation should still exist in every case (see the global edit-button convention below for how a manager cleans this up after the fact), but expect friction here specifically for single-facility companies where the two names end up identical or the corporate fields are sparse/wrong. Not a blocker for building the rest of Phase 3 — just something to keep in mind rather than assume clean data.
 
-## Phase 4 — Client record UI — **items 1-3 shipped 2026-09-02 (Company page, facility rail + General tab, Facility Policies tab), read-only pass; items 4-7 (Users, Elavon, DropBox, ps_task_status indicators) not yet built**
+## Phase 4 — Client record UI — **items 1-3, 5 shipped (Company page, facility rail + General tab, Facility Policies tab, Elavon tab), read-only pass; items 4, 6, 7 (Users, DropBox connection flow, ps_task_status indicators) not yet built**
 
-Build-order and live-build detail (what actually shipped, plus the 2026-09-03 Elavon-data bug fix, blink/performance fix, and Dropbox button UI) are in [[Session 2026-09-02–03 — Confirmation Screen, Re-sync, Activity Logs & Client Record UI]].
+Build-order and live-build detail are in [[Session 2026-09-02–03 — Confirmation Screen, Re-sync, Activity Logs & Client Record UI]] (items 1-3, shipped 2026-09-02) and [[Session 2026-09-03 — Live Testing Fixes, Transaction Leaks & Field Reference Help]] (item 5/Elavon tab, real bugs found from live usage, plus a new Field Reference help table not in the original plan at all -- a searchable "which PS field does this OO field come from" reference, both shipped 2026-09-03).
 
 **Company page is the main page — no tabs.** Sections/boxes instead:
 - **Company Information**: address, phone, email.
@@ -104,5 +104,6 @@ Build-order and live-build detail (what actually shipped, plus the 2026-09-03 El
 - [[Onboarding Orchestrator Kickoff — Session Log]]
 - [[Phase 0-2 — Foundations, Ingestion Pipeline & Search]]
 - [[Session 2026-09-02–03 — Confirmation Screen, Re-sync, Activity Logs & Client Record UI]]
+- [[Session 2026-09-03 — Live Testing Fixes, Transaction Leaks & Field Reference Help]]
 - [[Production Readiness Checklist]]
 - [[Dedup Tool Index]]
