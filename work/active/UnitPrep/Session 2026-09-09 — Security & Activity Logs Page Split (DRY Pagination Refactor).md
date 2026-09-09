@@ -41,6 +41,8 @@ All in `unitprep-ui`, Windows Dropbox checkout:
 
 **Not yet committed or pushed** -- 4 modified + 8 new files sitting uncommitted in the Dropbox working tree as of this note.
 
+**Correction (2026-09-09, later the same day)**: shipped as its own commit (`bcd0a94` on `unitprep-ui`) as part of [[Session 2026-09-09 — Codebase Audit Follow-Through, God-File Refactors, README Rewrite, and Coherent Ship]]'s commit-organization pass, tagged `v1.6.29`, pushed to `origin/main`. The `vitest`/native-binding gap flagged above was also resolved in that later session (verified from the WSL checkout's working native-Linux Node toolchain instead) -- 414/414 passing.
+
 ## Connects to the M5/M6 file-split-and-DRY backlog
 
 Two items from the stale [[2026-08-13-third-audit-fix-plan-full-session-handoff-m1-m2-done-m3-in-p|third-audit fix plan]]'s M5 (DRY consolidation) are effectively closed by this session: "shared audit-log filter-building helpers" (now `eventTypeFilter.ts`) and "`useAuditLogFilterData()` shared hook" (already existed, `filterDataError` and all, by the time this session started -- **(unverified)** which prior session shipped it). M6 (file splits) named `admin/users/page.tsx`, not this file -- `audit-logs/page.tsx` hadn't crossed 477 lines yet when that plan was written 2026-08-13. The rest of M5/M6/M7/M8's status is **not verified by this session** -- this note is not confirmation those milestones are otherwise complete.

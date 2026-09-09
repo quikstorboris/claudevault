@@ -93,6 +93,7 @@ Build-order and live-build detail are in [[Session 2026-09-02–03 — Confirmat
 ## Phase 7 — Permissions
 
 - Decide who can trigger import, re-sync, and especially the destructive "Same for each facility" action against the existing `admin`/`onboarding_manager` roles rather than inventing a new one ad hoc.
+- **Integrations nav/settings access (Process Street + Dropbox) — decided and shipped 2026-09-09**: a new `integrations.manage` permission, admin-only. See [[Session 2026-09-09 — Admin-Only Integrations Nav, integrations.manage Permission, and Editable Dropbox Settings]] for the full reasoning, including the real behavior change (onboarding_manager/department_manager lose the Process Street settings access they had before).
 
 ## Testing expectations, carried over from this codebase's existing standards
 
@@ -105,6 +106,7 @@ Build-order and live-build detail are in [[Session 2026-09-02–03 — Confirmat
 - [[Process Street Integration — Kickoff & Findings]]
 - [[Client & Facility Schema (Process Street-Sourced)]]
 - [[Onboarding Orchestrator Kickoff — Session Log]]
+- [[Session 2026-09-09 — Admin-Only Integrations Nav, integrations.manage Permission, and Editable Dropbox Settings]]
 - [[Phase 0-2 — Foundations, Ingestion Pipeline & Search]]
 - [[Session 2026-09-02–03 — Confirmation Screen, Re-sync, Activity Logs & Client Record UI]]
 - [[Session 2026-09-03 — Live Testing Fixes, Transaction Leaks & Field Reference Help]]
