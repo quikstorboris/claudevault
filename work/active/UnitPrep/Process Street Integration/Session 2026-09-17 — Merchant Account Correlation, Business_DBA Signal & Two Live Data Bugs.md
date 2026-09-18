@@ -1,6 +1,6 @@
 ---
 date: 2026-09-17
-description: "Investigated a real 'completed Elavon application not showing in OO' report down to two distinct root causes, then added Business_DBA as a second correlation signal alongside the run-title parenthetical. Found a live data-integrity bug along the way: Main Street Storage's facility_merchant_accounts row still points at Dubuqueland's own run, a leftover from the pre-fix false-positive incident, never corrected."
+description: "Investigated a real 'completed Elavon application not showing in OO' report down to two distinct root causes, then added Business_DBA as a second correlation signal alongside the run-title parenthetical. Found a live data-integrity bug along the way: Main Street Storage's facility_merchant_accounts row pointed at Dubuqueland's own run, a leftover from the pre-fix false-positive incident -- fixed 2026-09-18."
 tags: [work-note, unitprep, process-street]
 status: active
 quarter: Q3-2026
@@ -19,7 +19,7 @@ Boris reported a completed PS Elavon application for "Milton Self Storage" not s
 
 ## Real data bug found while checking that: Main Street Storage is linked to the wrong run
 
-Main Street Storage's `facility_merchant_accounts` row points at `swSvLUdhV9zhe9sAludIHw` -- **Dubuqueland Mini Storage's own `(Main)` run**, the exact run from [[Session 2026-09-10 — Developer Role, Merchant Account Nickname Fix, Elavon Resync Redesign & Session Timeout Fix|last week's "Main" false-positive fix]] (`a0058ab`). That fix stops the false match from happening *again*; it never corrected the bad link this same bug had already created before the fix shipped. Right now, Main Street Storage's Elavon tab is showing **Dubuqueland's real rate/parties/EIN/bank/credentials** as its own. **Not yet fixed** -- needs an unlink (Main Street Storage / Dubuqueland's run) and a relink (Main Street Storage / its own real run `ij83agH69Jmz6qEyzkBDyg`), both pending Boris's go-ahead.
+Main Street Storage's `facility_merchant_accounts` row pointed at `swSvLUdhV9zhe9sAludIHw` -- **Dubuqueland Mini Storage's own `(Main)` run**, the exact run from [[Session 2026-09-10 — Developer Role, Merchant Account Nickname Fix, Elavon Resync Redesign & Session Timeout Fix|last week's "Main" false-positive fix]] (`a0058ab`). That fix stops the false match from happening *again*; it never corrected the bad link this same bug had already created before the fix shipped. Main Street Storage's Elavon tab was showing **Dubuqueland's real rate/parties/EIN/bank/credentials** as its own. **Fixed 2026-09-18** via the app's own Unlink/Link Manually flow (no code or raw SQL needed) -- see [[Session 2026-09-18 — Force Sync Mode Shipped, Business_DBA Backfill Deferred]].
 
 ## The fix: `Business_DBA` as a second, additive correlation signal
 
@@ -47,7 +47,7 @@ Writing a "disagreement between signals" test surfaced a **pre-existing** blind 
 
 1. ~~**Backfill**: the new `business_dba` column is `NULL` for every already-indexed `ps_sync_state` merchant_account row...~~ **Decided 2026-09-18: not running it.** A force-sync mode to do this was built anyway (see [[Session 2026-09-18 — Force Sync Mode Shipped, Business_DBA Backfill Deferred]]), but Boris chose not to spend the PS API budget on it right now -- OO is properly organized as-is, and there's no need to revisit until the missing-signal issue actually resurfaces on a real client.
 2. **The cross-run-disagreement gap** above -- a real design question, not urgent.
-3. **Main Street Storage's wrong link** -- needs the unlink/relink described above.
+3. ~~**Main Street Storage's wrong link**~~ -- **fixed 2026-09-18**, see above.
 4. Owner phone/address as a third corroborating signal (Boris's original proposal) -- not yet built. Only useful for non-Absolute, interactively-filled applications; deferred pending Boris's steer on whether the DBA signal alone is enough for now.
 
 ## Related

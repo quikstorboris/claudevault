@@ -1,6 +1,6 @@
 ---
 date: 2026-09-18
-description: "Verified and shipped the Business_DBA correlation signal (from 2026-09-17) plus a new force-sync mode that can bypass the delta check on manual syncs. Boris explicitly decided not to run the ~363-run historical backfill this mode enables -- OO is properly organized right now and it isn't worth the shared PS API budget until the missing-signal issue resurfaces."
+description: "Verified and shipped the Business_DBA correlation signal (from 2026-09-17) plus a new force-sync mode that can bypass the delta check on manual syncs. Boris explicitly decided not to run the ~363-run historical backfill this mode enables. Also fixed Main Street Storage's wrong Elavon link via the app's own Unlink/Link Manually flow -- no code or SQL needed."
 tags: [work-note, unitprep, process-street]
 status: active
 quarter: Q3-2026
@@ -25,16 +25,25 @@ Verified before shipping: backend `cargo test` (605 passed), `cargo clippy --all
 
 Boris's call, explicit: don't run the ~363-run historical backfill this force mode was built to enable. **Why:** OO is currently properly organized and working; spending a meaningful fraction of the shared 2,500/hour PS API budget on a backfill isn't worth it against no active problem. **How to apply:** leave `business_dba` `null` on old rows as-is. Don't revisit this until the missing-signal issue (a real Merchant Account run invisible to correlation because it lacks both a useful parenthetical *and* has already synced before this signal existed) actually resurfaces on a real client -- at that point, either a targeted resync of that one run or the full `?force=true` pass are both already available, no new code needed.
 
+## Fixed: Main Street Storage's wrong Elavon link
+
+Main Street Storage (facility under company "MSS Jenks, LLC", `01a08c8e-5a92-7850-bd73-da1b7ec91569`) was showing Dubuqueland Mini Storage's own rate/parties/EIN/bank/credentials as its own, via a stale `facility_merchant_accounts` row pointing at Dubuqueland's `(Main)` run (`swSvLUdhV9zhe9sAludIHw`) -- the leftover from the pre-fix "Main" false-positive incident, see [[Session 2026-09-17 — Merchant Account Correlation, Business_DBA Signal & Two Live Data Bugs]].
+
+Fixed entirely through the app's existing Elavon-tab controls, driven live in Boris's own already-authenticated Chrome session (no login step needed, no code changes, no raw SQL):
+1. Elavon tab → **Unlink** → confirmed "Yes, unlink" (`DELETE /clients/{companyId}/{facilityId}/elavon/link`) -- clears `facility_merchant_accounts`, `facility_merchant_account_parties`, and `ps_task_status` (workflow='merchant_account') for this facility in one transaction.
+2. Entered Main Street Storage's own real run id (`ij83agH69Jmz6qEyzkBDyg`) in "Link Manually" → **Link** (`POST .../elavon/link`) -- fetched fresh from Process Street and re-ingested.
+
+Verified visually: Process Street Run ID now reads `ij83agH69Jmz6qEyzkBDyg`; QMS/pinpad credentials changed to Main Street Storage's own values (previously Dubuqueland's); Financials and Owner(s)/Signer now show blank/"None on file" rather than Dubuqueland's real EIN/bank/owner data -- consistent with this being a distinct, separately-filled application, not a data-loss regression.
+
 ## Shipped versions
 
 - `unitprep-api`: `v1.9.32` -- `7f099aa` (Business_DBA signal), `882a126` (force mode), `0db1dd0` (version bump). Pushed to `origin/main`.
 - `unitprep-ui`: `v1.6.35` -- `5001afa` (Force Full Resync control), `c05d9d8` (version bump). Pushed to `origin/main`.
 
-## Still open (unchanged from 2026-09-17)
+## Still open
 
 1. The cross-run-disagreement gap (two signals pointing at different intake runs both resolve `Unambiguous`) -- a real design question, not urgent, not fixed.
-2. **Main Street Storage's wrong link** -- still points at Dubuqueland's own run. Evidence already gathered (DB rows + live PS lookups); still needs Boris's go-ahead to unlink/relink.
-3. Owner phone/address as a third corroborating signal -- not built, deferred.
+2. Owner phone/address as a third corroborating signal -- not built, deferred.
 
 ## Related
 
