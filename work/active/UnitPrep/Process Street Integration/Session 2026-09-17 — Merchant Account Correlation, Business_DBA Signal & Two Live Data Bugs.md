@@ -33,7 +33,7 @@ Boris's own framing: the run's title is a lossy, human-typed proxy for informati
 
 Two of three real cases resolve cleanly on `Business_DBA` alone, without ever touching a parenthetical. Milton doesn't -- see [[Gotchas#Absolute Storage Management is not a representative client -- don't use it as a design reference|the Absolute gotcha]] for why that specific miss isn't expected to generalize.
 
-**Shipped** (uncommitted, pending Boris's review before push):
+**Shipped** -- committed and pushed 2026-09-18 as `unitprep-api` `v1.9.32` (`7f099aa`), see [[Session 2026-09-18 — Force Sync Mode Shipped, Business_DBA Backfill Deferred]]:
 - Migration `20260917140000_add_business_dba_to_ps_sync_state`: nullable `business_dba` column on `clients.ps_sync_state`.
 - `sync::orchestrator::sync_one_run` now extracts `Business_DBA` (falling back to the key-drift variants `Facility_Name_in_CRM`/`Facility_Name_in_Zoho`, confirmed both exist in real data for the same concept) from the same `fields` fetch it already makes for `ps_person_index` -- **zero extra PS API calls**.
 - `merchant_account_correlation.rs`: `MerchantAccountRunInfo` carries `business_dba`; a new `candidate_keywords()` collects both the parenthetical nickname and the DBA (each independently gated by the existing `is_specific_enough` threshold) so either signal alone makes a run a candidate. Additive, not a replacement -- the original title-parenthetical path is untouched.
@@ -45,13 +45,14 @@ Writing a "disagreement between signals" test surfaced a **pre-existing** blind 
 
 ## Open items
 
-1. **Backfill**: the new `business_dba` column is `NULL` for every already-indexed `ps_sync_state` merchant_account row (~363 of them) until each one's own `ps_updated_at` next moves -- the delta-check sync (`needs_refresh`) has no "force" mode, so historical rows won't get the new signal on their own. A full backfill would cost roughly one PS API request per page per run (Milton's own form alone took ~9 pages at ~20 fields/page) across ~363 runs -- a meaningful fraction of the [[Gotchas#Process Street's real API rate limit is undocumented publicly, but the live headers reveal it_ 2,500 requests/API-key/hour|2,500/hour budget]] in one pass. Not run yet -- needs Boris's go-ahead given the shared-resource cost.
+1. ~~**Backfill**: the new `business_dba` column is `NULL` for every already-indexed `ps_sync_state` merchant_account row...~~ **Decided 2026-09-18: not running it.** A force-sync mode to do this was built anyway (see [[Session 2026-09-18 — Force Sync Mode Shipped, Business_DBA Backfill Deferred]]), but Boris chose not to spend the PS API budget on it right now -- OO is properly organized as-is, and there's no need to revisit until the missing-signal issue actually resurfaces on a real client.
 2. **The cross-run-disagreement gap** above -- a real design question, not urgent.
 3. **Main Street Storage's wrong link** -- needs the unlink/relink described above.
 4. Owner phone/address as a third corroborating signal (Boris's original proposal) -- not yet built. Only useful for non-Absolute, interactively-filled applications; deferred pending Boris's steer on whether the DBA signal alone is enough for now.
 
 ## Related
 
+[[Session 2026-09-18 — Force Sync Mode Shipped, Business_DBA Backfill Deferred]] -- this session's own shipping + the backfill decision.
 [[Session 2026-09-10 — Developer Role, Merchant Account Nickname Fix, Elavon Resync Redesign & Session Timeout Fix]] -- the original "Main" false-positive fix this session's own data bug traces back to.
 [[Session 2026-09-09 — Elavon QMS & Pinpad Credentials Section]] -- the Elavon tab work this correlation logic ultimately feeds.
 [[Gotchas#Absolute Storage Management is not a representative client -- don't use it as a design reference|Absolute-not-representative gotcha]].
