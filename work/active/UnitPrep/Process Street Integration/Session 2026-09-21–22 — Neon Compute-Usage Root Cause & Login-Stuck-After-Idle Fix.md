@@ -9,7 +9,9 @@ project: unitprep
 
 # Session 2026-09-21–22 — Neon Compute-Usage Root Cause & Login-Stuck-After-Idle Fix
 
-Two unrelated investigations in one sitting: a Neon free-tier compute-usage alert (Boris's own suspicion going in was [[Process Street Integration — Kickoff & Findings|the Process Street integration]]), and a separate `unitprep-ui` login bug reported mid-session. **Neither fix is committed/pushed as of this note** — both are verified locally (build/tests green) and waiting on Boris.
+Two unrelated investigations in one sitting: a Neon free-tier compute-usage alert (Boris's own suspicion going in was [[Process Street Integration — Kickoff & Findings|the Process Street integration]]), and a separate `unitprep-ui` login bug reported mid-session.
+
+**Shipped 2026-09-22**: both fixes landed alongside an unrelated, already-in-progress feature found sitting uncommitted in both working trees at push time (a "daily time" Process Street sync-schedule mode — `schedule_mode`/`sync_time`/`sync_timezone`, a closed IANA-timezone list, DST-aware scheduling, matching frontend UI — not built in this session, reviewed and folded into the same release with Boris's explicit go-ahead rather than shipped separately). Full workspace test suite green (615 backend tests, `tsc`/`eslint` clean) before push. `unitprep-api` **v1.9.34** ([93ad10e](https://github.com/quikstorboris/unitprep-api/commit/93ad10e)), `unitprep-ui` **v1.6.36** ([4f70d2c](https://github.com/quikstorboris/unitprep-ui/commit/4f70d2c)), both tagged and pushed to `origin/main`.
 
 ## Neon compute-usage investigation
 
@@ -33,9 +35,9 @@ With the account-level theory dead, the original (correct) diagnosis from the fi
 
 The Neon operations log (`GET /projects/{id}/operations`) confirms this pattern **predates** any config confusion: two earlier multi-day continuous-active stretches (2026-08-21→26, ~5 days; 2026-09-11→15, ~4 days) show up as long unbroken `active` windows in an account whose suspend behavior was always the untouchable Free-plan default the whole time. A currently-running `target/release/unitprep` process (started that morning) was independently confirmed live via `ps aux`, holding the compute active during the investigation itself.
 
-### Fix shipped (not yet committed)
+### Fix shipped
 
-Bumped the refresh interval from 300s to **4 hours** in `client_ops::vendor_format::start_refresh_task` ([vendor_format.rs:82](\\wsl.localhost\Ubuntu\home\bmaksimov\Development\unitprep-api\src\client_ops\vendor_format.rs)), with the doc comment updated to explain why. `cargo build --release` clean, `cargo test vendor_format --release` passing. Boris's call on scope: keep the dev server running continuously going forward (RAM is no longer a constraint on `QSLP14`, superseding the older memory-driven "don't leave it running" guidance — see [[Gotchas#This laptop has ~2GB of RAM headroom -- local model inference and the vault's own test suite will freeze it|the QSLP15 RAM gotcha]], now explicitly not applicable here for this reason), so the interval fix — not a "stop leaving it running" behavior change — is what actually closes the loop. The running process still needs a restart to load the new binary.
+Bumped the refresh interval from 300s to **4 hours** in `client_ops::vendor_format::start_refresh_task` ([vendor_format.rs:82](\\wsl.localhost\Ubuntu\home\bmaksimov\Development\unitprep-api\src\client_ops\vendor_format.rs)), with the doc comment updated to explain why. `cargo build --release` clean, `cargo test vendor_format --release` passing. Boris's call on scope: keep the dev server running continuously going forward (RAM is no longer a constraint on `QSLP14`, superseding the older memory-driven "don't leave it running" guidance — see [[Gotchas#This laptop has ~2GB of RAM headroom -- local model inference and the vault's own test suite will freeze it|the QSLP15 RAM gotcha]], now explicitly not applicable here for this reason), so the interval fix — not a "stop leaving it running" behavior change — is what actually closes the loop. Boris restarted the running process and re-tested successfully before this shipped.
 
 ### Read replicas: considered and correctly rejected
 
@@ -55,7 +57,7 @@ Read through the actual auth flow: [app/login/page.tsx](\\wsl.localhost\Ubuntu\h
 
 `unitprep-ui` runs Next.js 16 with Turbopack (the current default dev bundler, confirmed via the running process list). The login page navigates on success with a client-side soft navigation (`router.replace("/clients")`), which depends on Turbopack's dev-mode HMR/router connection. After a tab sits idle long enough, that connection can go stale, and the next soft navigation can silently fail to complete — no thrown error, URL/content just don't update. A hard reload always recovers because it bypasses the stale in-memory router state entirely, which matches the observed symptom exactly. This is a **dev-mode-only** class of issue (a `next build && next start` production run has no Turbopack HMR machinery to go stale), but the app currently only runs via `next dev`.
 
-### Fix shipped (not yet committed)
+### Fix shipped
 
 [app/login/page.tsx](\\wsl.localhost\Ubuntu\home\bmaksimov\Development\unitprep-ui\app\login\page.tsx): the post-login redirect now uses `window.location.assign("/clients")` (a hard navigation) instead of `router.replace("/clients")` — structurally immune to any stale client-router state, at the cost of one full page load on a rare, non-hot-path event. The *other* redirect in the same file (bouncing an already-signed-in visitor away from `/login`) was deliberately left as `router.replace`, since it doesn't follow a long-idle event. `tsc --noEmit` clean, `eslint` clean on the file, full `vitest` suite 439/439 passing (no dedicated login-page test existed to update).
 
