@@ -35,6 +35,15 @@ Grok's suggested "index/RLS/orphan audit" was gated on Neon compute cost — che
 
 New note for CI-shaped ideas identified during normal development but not implemented (solo developer, no CI infra yet) — distinct from [[Compliance & Process Readiness]]'s broader "CI/CD is deliberately deferred" governance decision. First entry: enforcing `unitprep-ui`'s generated types stay in sync with their Rust source (from the same Grok review). Standing rule: add future CI ideas here instead of building them, unless Boris explicitly asks.
 
+## Grok follow-up pass — 3 small residuals, no real gaps
+
+Wrote up a response-to-review summary (mirroring Grok's original P1/P2/P3 sections, leading with the 2 corrections it had gotten wrong) and asked for a fresh pass on `unitprep-api v1.9.40` / `unitprep-ui v1.6.40`. Verdict: P1 fixes genuinely close the gaps for the single-instance deployment model actually in use, both corrections accepted, self-driven follow-through (GatedRouter, audit ordering, schema alignment) called out as exceeding the original review's ask. All deferred items (migration squash, cache observability, CI enforcement, full EXPLAIN/RLS audit) confirmed still correctly deferred.
+
+Three small residuals, all fixed same session:
+1. `unitprep-ui/README.md` still said tool sessions "are in-memory on the API side" — stale after `v1.9.39`'s durability work. Fixed.
+2. `RUNBOOK.md` still named `client_ops.dropbox_configuration` — a leftover string from before the schema move. Fixed.
+3. Grok's static search couldn't confirm the cancel/progress/partial-failure UI was actually live (hook names didn't surface). Independently re-verified: hooks genuinely imported across 18 files, Cancel buttons confirmed on all 3 tools' upload pages (a first grep pass gave false negatives — `DedupUploadPage.tsx`/`TaggerUploadPage.tsx` use a locally-renamed `cancelCheck` handler, not the bare `cancel` variable), and confirmed the partial-failure counters (`files_uploaded`/`files_failed`/`multipart_errors`) correctly render *only* in Group Prep's `UploadIntegritySummary.tsx` — verified against the Rust source that Dedup/Tagger's single-file check endpoints genuinely have no such fields to surface, not a UI gap.
+
 ## Related
 
 - [[Compliance & Process Readiness]] — the broader CI/CD deferral decision
