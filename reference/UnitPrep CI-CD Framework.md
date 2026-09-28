@@ -1,6 +1,6 @@
 ---
 date: "2026-09-28"
-description: "The full tiered CI/CD design for unitprep-api/unitprep-ui — what's built now (solo-dev local safeguards), what's designed but dormant (multi-dev remote CI), and why each piece is shaped the way it is. The living policy doc — follow it, don't re-derive it."
+description: "The full tiered CI/CD design for unitprep-api/unitprep-ui — what's built now (solo-dev local safeguards), what's designed but dormant (multi-dev remote CI), why each piece is shaped the way it is, and the mission-critical defense-in-depth controls guaranteeing tests never reach real Neon data. The living policy doc — follow it, don't re-derive it."
 tags:
   - reference
   - unitprep
@@ -49,6 +49,35 @@ The key move that reconciles "fast" with "thorough": **split by cost, not by rep
 
 The single most valuable piece of outside knowledge to bring into this design: GitHub Actions supports **service containers** — a throwaway Postgres instance spun up fresh for the duration of one job, migrations replayed against it, tests run against *that*, then discarded. Zero Neon compute, zero shared state, zero risk to real data, and it means the real-DB integration tests this project already has (session durability, RLS shape, schema round-trips) *can* run in CI without the compute-budget fear that's been the whole reason to keep them manual. This isn't a future nice-to-have contingent on a second developer — it's available today and worth wiring in whenever Tier 1 gets turned on, entirely independent of the multi-dev question. The tests that genuinely need real external state (live Process Street API calls) stay manual regardless; the tests that only need *a* real Postgres, not *the* real Neon branch, move to the ephemeral container.
 
+### Isolation from real data — mission-critical, non-negotiable, defense in depth (2026-09-28)
+
+**Boris's explicit framing**: any automated test run reaching the real Neon dev or prod branch and writing test data into it is a MAJOR no-no — a mission-critical requirement, not an ordinary design preference. Treated accordingly: no single control below is trusted alone. This is the same "defense in depth" posture this project already applies to auth (an app-level check *and* an RLS policy — see [[Dev Principles]] #8), extended to test infrastructure.
+
+1. **Credential absence, not just credential discipline.** Any CI job that runs an automated test suite never receives `NEON_DEV_DATABASE_URL*` / `NEON_PROD_DATABASE_URL*` / `DATABASE_URL` as a secret at all. If the credential literally isn't present in that job's environment, no code path — buggy, copy-pasted, or misconfigured — can reach it. GitHub Actions "environments" can additionally gate which secrets are visible to which workflow, so this is enforceable at the platform level, not just by carefully-written YAML.
+2. **A distinct env var name for test connections, never reused from the app's real ones** — e.g. `TEST_DATABASE_URL`, pointed only at the ephemeral service-container Postgres. Any DB-touching test reads from this var and hard-fails (panics, never silently falls back to `DATABASE_URL`) if it's unset. The unsafe fallback pattern — "use the real one if the test one isn't set" — is exactly the shape of mistake this control exists to make structurally impossible, not just unlikely.
+3. **A runtime guard inside the test harness itself, as a backstop against #1 and #2 both failing at once**: before any DB-touching test runs, assert the connected database is not a Neon host (check the connection string / `current_database()` against known Neon hostnames or project ids) and abort loudly if it is.
+4. **Two genuinely different categories of `#[ignore]`d test, never conflated**:
+   - Tests needing *a* real Postgres, not *the* real data — schema shape, RLS enforcement, migration correctness, the session-durability round-trip tests already in this codebase. These are the ones that move to the ephemeral container.
+   - Tests needing real *external* state — live Process Street API calls, real Dropbox folders. These can never run against a throwaway anything; they stay manual, deliberately triggered by a human, never wired into any automated job, regardless of how this framework's other tiers evolve.
+   Worth adopting sqlx's own `#[sqlx::test]` macro for the first category specifically — it provisions a fresh, isolated database per test against a real Postgres server, migrates it, tears it down automatically. That's the sqlx-idiomatic version of this exact guarantee, and it means the isolation is structural (the macro's own behavior) rather than something every test author has to remember to implement correctly by hand.
+5. **The safe path has to be the default path, not an equally-easy alternative.** A new DB-touching test should reach for the ephemeral pattern by default; using real external state should require a specific, visible, justified reason — never the path of least resistance.
+6. **Local development gets the same guarantee, not just CI.** A developer (or an AI agent working locally) running `#[ignore]`d tests by hand is exactly as capable of hitting real Neon as an automated job is — see the Docker discussion below for extending this protection to local dev, not just what runs remotely.
+
+**Before Tier 1 is ever turned on**, every one of the 6 controls above should be true, not just the workflow YAML's use of a service container. A first Tier-1 PR that only adds the GitHub Actions workflow file without also making these guarantees structural (env var naming, the runtime guard, `#[sqlx::test]` adoption where applicable) should be treated as incomplete, not shippable.
+
+## Tier 2 trigger conditions — dormant is a decision, not a default to drift into
+
+Since Tier 2 is deliberately dormant rather than abandoned, these are the concrete conditions that should prompt an *active* decision about turning some part of it on — not something to silently notice six months late:
+
+- A second developer (even part-time, even a contractor) starts touching either repo.
+- A `dev` branch gets created for any reason — per [[Patterns]]'s 2026-07-23 anticipation of exactly this moment.
+- A real production deployment (as opposed to just the current dev branch) becomes real — changes the blast radius of an untested change landing.
+- Commit velocity drops sharply for a sustained period — could mean the "don't slow down 100+/month shipping" tradeoff this whole framework is built around no longer applies the same way.
+- A compliance/audit requirement arrives that specifically names change-control or review process (see [[Compliance & Process Readiness]]).
+- Any of the isolation controls above get bypassed, fail, or reveal a real near-miss — a signal the framework needs to mature faster than planned, not proof it's working as designed.
+
+**Mechanism for noticing**: TBD with Boris — passive (checked whenever this doc or the CI question comes up again) versus an active periodic review. Whichever is chosen, record it here once decided rather than leaving it implicit.
+
 ## Tier 2 — Multi-dev framework (designed, dormant until a second developer)
 
 **Status: fully designed, zero infrastructure exists, not needed yet.**
@@ -69,7 +98,7 @@ Cross-repo type-generation drift enforcement (tracked separately in [[CI Backlog
 | Tier | What | Status |
 |---|---|---|
 | 0 | Local pre-flight scripts | **Built** — `scripts/preflight.sh` in both repos |
-| 1 | Split fast/slow GH Actions, ephemeral-Postgres DB tests | Designed, not enabled |
+| 1 | Split fast/slow GH Actions, ephemeral-Postgres DB tests | Designed, not enabled — all 6 isolation controls are a precondition, not a follow-up |
 | 2 | Branch protection, PR review, `dev` branch, scheduled scans | Designed, dormant until 2nd developer |
 | — | `cargo-audit`/`gitleaks` tooling install | Next concrete Tier-0 addition, not urgent |
 
