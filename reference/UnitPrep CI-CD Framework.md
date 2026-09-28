@@ -73,7 +73,7 @@ Boris's framing: time/token cost is irrelevant here (company-paid, no schedule p
 
 | Phase | What | Status | Why this phase, why this order |
 |---|---|---|---|
-| 1. DB-only | `docker-compose.yml`, one `postgres:18` service (matches the real Neon version), for local ephemeral test isolation | **In the pipeline now** | Already justified independent of everything else below — the local half of the mission-critical isolation requirement above. Zero impact on the existing native dev workflow otherwise. |
+| 1. DB-only | `docker-compose.yml`, one `postgres:18` service (matches the real Neon version), for local ephemeral test isolation | **Built 2026-09-28** — see [[Session 2026-09-28 (Part 4) — Tier 0 CI Tooling Built (cargo-audit, gitleaks) with Real RUSTSEC and npm-audit Fixes]] | Already justified independent of everything else below — the local half of the mission-critical isolation requirement above. Zero impact on the existing native dev workflow otherwise. |
 | 2. `unitprep-api` dev container | Long-lived container (not rebuilt per code change), source bind-mounted, `cargo` registry + `target/` as named volumes, `cargo watch` inside | **In the pipeline now** | Environment parity + a genuine engineering exercise; must follow [[UnitPrep Docker Standards]]'s caching rules exactly or it becomes an iteration-speed regression instead of an improvement. |
 | 3. `unitprep-ui` dev container | Same pattern — bind-mounted source, `node_modules`/`.next` as named volumes, `next dev` inside | **In the pipeline now** | Same reasoning as phase 2, mirrored for the frontend. |
 | 4. Production-shaped multi-stage image | Minimal runtime image (`debian:bookworm-slim` or `distroless`, given the `openssl-sys`/webauthn constraint documented in [[UnitPrep Docker Standards]]) for actual deployment | **Documented now, execution trigger-gated** | Building a deployment image for a deployment model that hasn't been decided (single-instance vs. multi-instance — the CTO assessment's own open question) means designing against a guess. Same "dormant until a real trigger" logic as CI Tier 2 — deliberately kept consistent rather than special-cased for containers. |
@@ -131,7 +131,8 @@ Cross-repo type-generation drift enforcement (tracked separately in [[CI Backlog
 | 1 | Split fast/slow GH Actions, ephemeral-Postgres DB tests | Designed, not enabled — all 6 isolation controls are a precondition, not a follow-up |
 | 2 | Branch protection, PR review, `dev` branch, scheduled scans | Designed, dormant until 2nd developer |
 | — | `cargo-audit`/`gitleaks`/`npm audit` tooling install | **Built 2026-09-28** — all wired into preflight in both repos |
-| Docker 1-3 | Local ephemeral-DB compose, `unitprep-api`/`unitprep-ui` dev containers | **In the pipeline** — see [[UnitPrep Docker Standards]] for the LAW-level technical detail |
+| Docker 1 | Local ephemeral-DB compose (`docker-compose.yml`, `postgres:18`) | **Built 2026-09-28**, `unitprep-api` `v1.9.43` — verified empirically (up/healthy/connect/down, zero volumes left) |
+| Docker 2-3 | `unitprep-api`/`unitprep-ui` dev containers | **In the pipeline** — see [[UnitPrep Docker Standards]] for the LAW-level technical detail |
 | Docker 4-5 | Production image, full compose orchestration | Documented, execution gated on the same trigger as CI Tier 2 |
 | Redis | Session-store backend option | Documented, deferred, tied to the Docker phase 4 trigger |
 

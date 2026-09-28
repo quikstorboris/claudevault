@@ -42,13 +42,26 @@ Pushing this session's vault edits (the paragraph above, [[Gotchas]], the framew
 
 Asked directly whether to bump `vitest` 4→5 now or defer it (the moderate `@vitest/mocker` finding left open from the `npm audit` wiring above): initial recommendation was defer (real major-version risk against a low-value fix — dev-only, not reachable in this codebase's threat model). Boris pushed back with the actual deciding factor: this is dev tooling, not production, so the upgrade's blast radius is fully contained regardless of what breaks. That reframed it correctly — re-checked peer deps *before* re-answering rather than re-arguing from priors: `vite` was already at `8.1.5` (satisfies vitest 5's `^6.4.0 || ^7.0.0 || ^8.0.0` requirement untouched), Node runtime already at `24.19.0`, only `@types/node` (pinned `^20`) needed a bump to match vitest 5's own peer range. Did it: `vitest`/`@vitest/coverage-v8` → `^5.0.2`, `@types/node` → `^24`, verified `tsc`/`eslint`/full suite (669 tests)/`vitest run --coverage` all clean before committing. **Shipped**: `unitprep-ui` `v1.6.44` (2 commits — the upgrade, then dropping preflight's now-unnecessary `--audit-level=high` workaround — plus the version bump), tagged and pushed. `npm audit` now reports 0 vulnerabilities.
 
+## Same-day follow-up: Docker Phase 1 built and verified
+
+Asked "are we ready for Docker phase 0?" (no such phase exists — phases are 1-5; clarified and proceeded as Phase 1). Docker itself wasn't installed anywhere in this environment (`docker` missing in WSL, Docker Desktop missing on Windows) — asked how Boris wanted it installed (Docker Desktop vs. native Engine vs. handle it himself); he picked **native Docker Engine inside WSL**, and since this session has no passwordless `sudo`, handed him the exact install commands to run himself (same pattern as any `apt`-requiring install — see [[Patterns]]' entry on the `pkg-config`/`libssl-dev` precedent). Checked the WSL distro's actual codename (`resolute`, Ubuntu 26.04) against Docker's own apt repo listing before handing over commands, rather than assuming a fallback codename would be needed. Boris ran them; `docker run hello-world` succeeded (Docker 29.8.1, Compose v5.5.1).
+
+Built `docker-compose.yml` in `unitprep-api`: a single `postgres:18` service (`test-db`), gated behind a `test` compose profile, `tmpfs`-backed (no named volume — genuinely ephemeral), bound to `127.0.0.1:5433`. Two real things found during verification, not assumed:
+- **This WSL machine already has a native Postgres 18.6 installed, listening on 5432** — a surprise worth surfacing rather than silently working around; used port 5433 for the container instead of guessing it was safe.
+- **The `postgres:18+` image's data-directory convention changed** (`pg_ctlcluster`-style, expects the parent `/var/lib/postgresql`, not `.../data`) — the first `up` attempt crashed with an explicit error naming this; fixed and documented in [[UnitPrep Docker Standards]]'s verified-facts section since it applies to any `postgres:18+` container this project ever runs, not just this one.
+
+Full empirical cycle confirmed: `up` → healthy in ~3s → `psql` connects and reports `PostgreSQL 18.6` → `down` → `docker volume ls` shows zero volumes left. **Shipped**: `unitprep-api` `v1.9.43`, tagged and pushed.
+
+**A second, distinct gotcha hit while committing**: a `git commit -m` heredoc containing backtick-quoted phrases like `` `docker compose --profile test up -d` `` (meant as literal text) got silently blanked out — the outer Windows Git Bash shell (which parses the whole `wsl.exe -e bash -lc "..."` string before WSL ever sees it) executed those backticks itself, found no `docker`/`psql` on Windows, and substituted empty output. No error at any step; only caught by reading the commit back with `git log -1 --format='%B'`. Fixed via `git commit --amend -F <file>` (safe pre-push) using a message file instead. Now in [[Gotchas]].
+
 ## Vault updated
 
-[[UnitPrep CI-CD Framework]]'s Tier 0 section and status-summary table updated to reflect `cargo-audit`/`gitleaks`/`npm audit` as **built**, not "next, not urgent" — the framework doc's own instruction ("this table gets updated as each phase actually ships") applied to itself.
+[[UnitPrep CI-CD Framework]]'s Tier 0 section and status-summary table updated to reflect `cargo-audit`/`gitleaks`/`npm audit` as **built**, not "next, not urgent" — the framework doc's own instruction ("this table gets updated as each phase actually ships") applied to itself. Docker Phase 1 marked built in both the framework doc and [[UnitPrep Docker Standards]].
 
 ## Related
 
 - [[Session 2026-09-28 (Part 2) — Migration-Squash Alternative & CI-CD Framework Design]] — designed the framework this session executes one piece of
-- [[UnitPrep CI-CD Framework]] — Tier 0 status updated this session
-- [[Gotchas]] — the new WSL-UNC-path executable-bit entry
+- [[UnitPrep CI-CD Framework]] — Tier 0 and Docker Phase 1 status updated this session
+- [[UnitPrep Docker Standards]] — the `postgres:18+` mount-point fact added this session
+- [[Gotchas]] — the new WSL-UNC-path executable-bit entry, and the new outer-shell-backtick-substitution entry
 - [[Patterns]] — the vault-push-needs-explicit-ask-when-out-of-scope lesson
