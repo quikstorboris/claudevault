@@ -76,7 +76,17 @@ Since Tier 2 is deliberately dormant rather than abandoned, these are the concre
 - A compliance/audit requirement arrives that specifically names change-control or review process (see [[Compliance & Process Readiness]]).
 - Any of the isolation controls above get bypassed, fail, or reveal a real near-miss — a signal the framework needs to mature faster than planned, not proof it's working as designed.
 
-**Mechanism for noticing**: TBD with Boris — passive (checked whenever this doc or the CI question comes up again) versus an active periodic review. Whichever is chosen, record it here once decided rather than leaving it implicit.
+**Mechanism for noticing** (decided 2026-09-28, Boris's call — "passive is fine, mixture if safer, as long as we're on top of it"): a mixture, layered so no single piece has to work perfectly —
+1. **Passive, durable**: this doc plus [[Compliance & Process Readiness]] both carry the trigger list and cross-link each other, so either one being read (which the vault's own SessionStart hook already surfaces for active work) resurfaces the other.
+2. **Active, durable**: a monthly scheduled task (`unitprep-ci-tier2-review`, `mcp__scheduled-tasks`, not the session-scoped `CronCreate` — that one auto-expires in 7 days and would have silently stopped working) checks the mechanically-checkable triggers (does a `dev` branch exist yet? commit velocity vs. the ~100/month baseline? has `.github/workflows/` appeared?) and reminds Boris to self-assess the ones that aren't git-detectable (a second developer, a real production deployment, a compliance requirement). Logs one line below every run, so a silently-stopped task is visible (a gap in the log), not just assumed to still be running.
+
+## Review Log
+
+One line per monthly check — a gap here is the tell that the scheduled task stopped running, not a reason to assume everything's still fine.
+
+| Date | Dev branch exists? | Commits (trailing 30d, api / ui) | `.github/workflows/` present? | Notes |
+|---|---|---|---|---|
+| 2026-09-28 | No | — (framework just created) | No | Baseline entry, framework just established. |
 
 ## Tier 2 — Multi-dev framework (designed, dormant until a second developer)
 

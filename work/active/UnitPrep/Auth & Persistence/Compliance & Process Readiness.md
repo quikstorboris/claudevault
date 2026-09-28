@@ -144,14 +144,11 @@ Boris asked what this actually means, in plain terms:
 backup/PITR settings) is worth doing whenever convenient; true
 multi-region DR is explicitly deferred, same tier as CI/CD below.
 
-## CI/CD & DevOps — explicitly deferred, Boris's call
+## CI/CD & DevOps — now has an actual design, not just a deferral (2026-09-28)
 
-Not necessary at this stage: the product isn't at POC yet, the team
-doesn't know it well, and this will likely be delegated to whichever team
-already handles CI/CD/DevOps for Quikstor's main software, to stay in
-sync with existing process rather than inventing a parallel one.
-Revisit once the product has real users and a team hand-off is actually
-happening — not before.
+Superseded in part: [[UnitPrep CI-CD Framework]] now exists as a real tiered design — Tier 0 (local `preflight.sh` safeguards) is built and shipped; Tiers 1-2 (remote CI, multi-dev gates) are fully designed and deliberately dormant, not just "not necessary at this stage." The original reasoning below still holds for *why* Tiers 1-2 stay dormant (not at POC yet, would likely sync with whichever team owns CI/CD for Quikstor's other software eventually), but "CI/CD is deferred" as a blanket statement is stale.
+
+**This is the natural home to check the framework's Tier 2 trigger conditions** (a second developer, a `dev` branch, a real production deployment, a compliance requirement naming change-control, a near-miss on the test-data isolation controls — full list in the framework doc) whenever this note comes up for its own periodic review. A monthly scheduled check (`unitprep-ci-tier2-review`, see the framework doc's own Review Log) covers the mechanically-checkable ones between now and then.
 
 ## Process documentation & periodic-review bureaucracy — flagged, not urgent
 
@@ -174,3 +171,5 @@ rediscover that this was already considered and deliberately deprioritized
   shared gap), trigger-gated items
 - [[Architecture]], [[Database Schema]] — what the SOC 2/SOX controls
   above are actually assessed against
+- [[UnitPrep CI-CD Framework]] — the actual tiered CI/CD design this
+  note's own "deferred" framing now only partially describes
