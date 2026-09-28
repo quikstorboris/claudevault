@@ -32,9 +32,9 @@ Runs, in order, fast-fail:
 
 **Not wired as an enforced git hook yet** — runnable manually (`./scripts/preflight.sh`) rather than auto-triggered on `git push`, so it can be adopted gradually and never silently blocks a push in a way that's confusing to debug. Worth revisiting once it's been run by hand enough times to trust it completely; a `pre-push` hook is a two-line addition once that trust exists.
 
-**Built 2026-09-28** (see [[Session 2026-09-28 (Part 4) — Tier 0 CI Tooling Built (cargo-audit, gitleaks) with Real RUSTSEC and npm-audit Fixes]]): `cargo-audit` (via `cargo install`, no sudo) and `gitleaks` (user-local binary in `~/.local/bin`, no sudo) are now steps 4-5 of `unitprep-api`'s preflight (7 steps total) and step 4 of `unitprep-ui`'s (6 steps total) — diff-scoped to `merge-base(origin/main, HEAD)..HEAD`, blocking only on real findings (advisory-grade `unmaintained`/`yanked` `cargo audit` warnings print but don't fail). `unitprep-api` also has a `.gitleaks.toml` allowlisting 6 confirmed false positives in sanitized Process Street test fixtures. The first real runs found and fixed a medium RUSTSEC `rustls` advisory and a critical Next.js RCE (`npm audit`, run manually once — not yet a preflight step, since `unitprep-ui` has no Rust-side equivalent slot and hasn't been wired in the same way yet).
+**Built 2026-09-28** (see [[Session 2026-09-28 (Part 4) — Tier 0 CI Tooling Built (cargo-audit, gitleaks) with Real RUSTSEC and npm-audit Fixes]]): `cargo-audit` (via `cargo install`, no sudo) and `gitleaks` (user-local binary in `~/.local/bin`, no sudo) are now steps 4-5 of `unitprep-api`'s preflight (7 steps total) and step 5 of `unitprep-ui`'s (7 steps total) — diff-scoped to `merge-base(origin/main, HEAD)..HEAD`, blocking only on real findings (advisory-grade `unmaintained`/`yanked` `cargo audit` warnings print but don't fail). `unitprep-api` also has a `.gitleaks.toml` allowlisting 6 confirmed false positives in sanitized Process Street test fixtures. The first real runs found and fixed a medium RUSTSEC `rustls` advisory and a critical Next.js RCE. `npm audit --audit-level=high` was then also wired in as `unitprep-ui`'s preflight step 4/7 (same session day, follow-up chunk) — mirrors `cargo-audit`'s block-on-real/don't-block-on-triaged split: the 3 known moderate `@vitest/mocker` findings (need a `vitest` 4→5 major bump, deferred) print but don't fail; drop `--audit-level` once that bump lands.
 
-**Still not in Tier 0**: `npm audit` is not yet a `unitprep-ui` preflight step (run manually so far); a real secrets-scanning tool beyond `gitleaks`'s default rules (e.g. `trufflehog`) hasn't been evaluated. Neither urgent.
+**Still not in Tier 0**: a real secrets-scanning tool beyond `gitleaks`'s default rules (e.g. `trufflehog`) hasn't been evaluated. Not urgent.
 
 ## Tier 1 — Minimal remote CI (designed, not yet enabled)
 
@@ -130,7 +130,7 @@ Cross-repo type-generation drift enforcement (tracked separately in [[CI Backlog
 | 0 | Local pre-flight scripts | **Built** — `scripts/preflight.sh` in both repos |
 | 1 | Split fast/slow GH Actions, ephemeral-Postgres DB tests | Designed, not enabled — all 6 isolation controls are a precondition, not a follow-up |
 | 2 | Branch protection, PR review, `dev` branch, scheduled scans | Designed, dormant until 2nd developer |
-| — | `cargo-audit`/`gitleaks` tooling install | **Built 2026-09-28** — wired into preflight in both repos; `npm audit` still manual-only in `unitprep-ui` |
+| — | `cargo-audit`/`gitleaks`/`npm audit` tooling install | **Built 2026-09-28** — all wired into preflight in both repos |
 | Docker 1-3 | Local ephemeral-DB compose, `unitprep-api`/`unitprep-ui` dev containers | **In the pipeline** — see [[UnitPrep Docker Standards]] for the LAW-level technical detail |
 | Docker 4-5 | Production image, full compose orchestration | Documented, execution gated on the same trigger as CI Tier 2 |
 | Redis | Session-store backend option | Documented, deferred, tied to the Docker phase 4 trigger |

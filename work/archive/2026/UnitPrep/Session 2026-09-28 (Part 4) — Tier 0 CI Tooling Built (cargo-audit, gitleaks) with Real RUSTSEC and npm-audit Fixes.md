@@ -1,7 +1,7 @@
 ---
 date: "2026-09-28"
 quarter: "Q3-2026"
-description: "Built the last Tier-0 gap the CI/CD framework doc flagged (cargo-audit, gitleaks), wired into both repos' preflight.sh, and fixed every real finding the first runs surfaced: a medium RUSTSEC rustls advisory and a critical Next.js RCE"
+description: "Built the last Tier-0 gaps the CI/CD framework doc flagged (cargo-audit, gitleaks, npm audit), wired into both repos' preflight.sh, fixed every real finding (a medium RUSTSEC rustls advisory, a critical Next.js RCE), and hit a first-time vault-push block from the Auto Mode classifier"
 tags:
   - work-note
   - project/unitprep
@@ -30,12 +30,21 @@ Two advisory-grade `cargo audit` warnings left open, correctly non-blocking: `bi
 
 Editing `scripts/preflight.sh` via the `\\wsl.localhost\Ubuntu\...` UNC path (the mechanism a Windows-side Claude Code session uses to reach WSL files with the Edit/Write tools) **silently strips the executable bit** — `git status`/`git diff` show no content change, but the file mode flips from `100755` to `100644`, and running it fails with `Permission denied`. Caught immediately (`ls -la` showed `-rw-r--r--`, `preflight.sh` wouldn't execute) and fixed with `chmod +x` before every commit; `git ls-files -s` was used to positively confirm `100755` was restored before pushing. Recorded in [[Gotchas]] so a future session doesn't lose an hour rediscovering it.
 
+## Follow-up chunk, same day: `npm audit` wired into `unitprep-ui` too
+
+After the vault push was blocked once (see below) and re-approved, Boris asked what's next on the Docker/CI menu; offered three options (Docker Phase 1, wiring `npm audit` into `unitprep-ui`'s preflight, or the deferred `vitest` major bump) and he picked the `npm audit` wiring. **`unitprep-ui` → `v1.6.43`** (2 commits, tagged, pushed): new preflight step 4/7, `npm audit --audit-level=high` — mirrors `cargo-audit`'s block-on-real/don't-block-on-triaged split (a severity threshold standing in for `cargo-audit`'s categorical vulnerability-vs-warning distinction, since `npm audit` has no such category). Verified empirically before wiring in: `--audit-level=high` exits 0 with only the 3 known moderate `@vitest/mocker` findings present, but still *prints* them (visible, not hidden) — confirmed again in the full `preflight.sh` run afterward (86 test files / 669 tests still green). Hit the same WSL-UNC-path executable-bit gotcha again and caught it the same way.
+
+## A real, first-time hiccup: vault push blocked by the Auto Mode classifier
+
+Pushing this session's vault edits (the paragraph above, [[Gotchas]], the framework doc) was denied: "[Out-of-Place Publication]." Not a vault-access or WSL issue — a plain Windows-native git push, and vault pushes have gone through cleanly in prior sessions. The actual cause: this session's explicit scope was `unitprep-api`/`unitprep-ui` (review CI/Docker plans, build the `cargo-audit`/`gitleaks` chunk, "commit as usual... push"); the vault documentation was Claude's own unprompted follow-through, never asked for this turn. The classifier judges each risky action against what the conversation actually requested, not against a project's own standing `CLAUDE.md` permission (this vault's own `CLAUDE.md` explicitly grants Claude discretion to commit/push it) — publishing to a third repo nobody mentioned this turn read as out-of-scope regardless of that standing grant. Explained plainly to Boris rather than working around it; he confirmed explicitly ("yea go ahead"), and the same push then succeeded normally. **Lesson, not yet promoted to [[Patterns]]**: a vault push inside a session scoped to something else needs an explicit ask that turn, even where the vault's own config pre-authorizes it.
+
 ## Vault updated
 
-[[UnitPrep CI-CD Framework]]'s Tier 0 section and status-summary table updated to reflect `cargo-audit`/`gitleaks` as **built**, not "next, not urgent" — the framework doc's own instruction ("this table gets updated as each phase actually ships") applied to itself.
+[[UnitPrep CI-CD Framework]]'s Tier 0 section and status-summary table updated to reflect `cargo-audit`/`gitleaks`/`npm audit` as **built**, not "next, not urgent" — the framework doc's own instruction ("this table gets updated as each phase actually ships") applied to itself.
 
 ## Related
 
 - [[Session 2026-09-28 (Part 2) — Migration-Squash Alternative & CI-CD Framework Design]] — designed the framework this session executes one piece of
 - [[UnitPrep CI-CD Framework]] — Tier 0 status updated this session
 - [[Gotchas]] — the new WSL-UNC-path executable-bit entry
+- [[Patterns]] — the vault-push-needs-explicit-ask-when-out-of-scope lesson
