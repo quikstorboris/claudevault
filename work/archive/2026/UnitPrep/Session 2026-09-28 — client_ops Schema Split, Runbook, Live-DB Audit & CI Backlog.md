@@ -2,14 +2,14 @@
 date: "2026-09-28"
 description: "Follow-up to the durable-session-store work (v1.9.39): moved dropbox_configuration/process_street_settings out of client_ops into a new integrations schema, added RUNBOOK.md, ran a cheap live-DB FK-index audit, and started brain/CI Backlog.md"
 tags: [work-note, unitprep, infra]
-status: active
+status: completed
 quarter: Q3-2026
 project: unitprep
 ---
 
 # Session 2026-09-28 — client_ops Schema Split, Runbook, Live-DB Audit & CI Backlog
 
-Continuation of the [[Session 2026-09-24 — GatedRouter Permission-Gate Manifest, Audit-Log Commit Ordering Fix & Cross-Repo Type Generation|Grok review]] follow-through, after `v1.9.39`'s durable session store work shipped. Boris's priority order: `client_ops` schema modularity first, migration squash next, CI work deferred to a backlog note, live-DB EXPLAIN only if cheap, demo runbook if cheap.
+Continuation of the [[Session 2026-09-24 — Durable Session Store for WebAuthn and All Three Tool Sessions|durable session store work]] shipped the same week (`v1.9.39`), itself part of the [[Session 2026-09-24 — Grok Review Follow-Through — CHANGELOG Backfill, 5-File Split & Cancel-Progress UI|Grok review]] follow-through. Boris's priority order: `client_ops` schema modularity first, migration squash next, CI work deferred to a backlog note, live-DB EXPLAIN only if cheap, demo runbook if cheap.
 
 ## `client_ops` schema modularity — smaller than it looked
 

@@ -57,6 +57,8 @@ reconstructing content directly, which is fully deterministic since the
 exact text of every intermediate state is already known from having
 written it earlier in the same session.
 
+**Refinement, found 2026-09-24**: when the entangled work spans several files but only a few are genuinely *mixed within one file*, don't hand-reconstruct all of them — `git stash push -- <specific paths>` first to pull the cleanly-separable files (new hooks nobody else touched, whole-file additions) out of the working tree entirely, leaving only the truly mixed files to reconstruct by hand. Verify the resulting disk state for real (`cargo test`/`npx vitest run` etc. against what's actually on disk, not just what's staged — staging alone doesn't isolate a true intermediate state, since unstaged files are still present and still compiled/type-checked together with everything else), commit, `git stash pop` to restore the rest, reconstruct the full state, verify again, commit the second piece. Used for both a 3-file UI entanglement (split vs. progress-UI landing on the same files) and a 3-tool Rust durability rollout (each tool's own crate changes vs. the shared `main.rs` wiring) — see [[Session 2026-09-24 — Grok Review Follow-Through — CHANGELOG Backfill, 5-File Split & Cancel-Progress UI]] and [[Session 2026-09-24 — Durable Session Store for WebAuthn and All Three Tool Sessions]].
+
 ## UnitPrep: commit cadence — batch, don't checkpoint
 
 Don't make incremental checkpoint commits during multi-step UnitPrep development work, even when a step is complete, tested, and would otherwise be a reasonable commit boundary. Keep working through the full planned sequence and only commit once the work reaches something version-eligible (a real release-worthy milestone).
