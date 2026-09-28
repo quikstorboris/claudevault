@@ -12,7 +12,7 @@ Persistent context and knowledge retained across sessions. Each topic lives in i
 - [[Key Decisions]] — architectural and workflow decisions worth recalling
 - [[Patterns]] — recurring patterns and conventions discovered across work
 - [[Dev Principles]] — the ~15 code-quality/security/workflow principles actually enforced across UnitPrep work, compiled from Patterns + Key Decisions + audit practice
-- [[CI Backlog]] — running list of specific CI check ideas identified during normal development, not implemented yet (CI/CD is deliberately deferred — see [[Compliance & Process Readiness]])
+- [[CI Backlog]] — check ideas without a home yet in a tier of [[UnitPrep CI-CD Framework]] (the actual living CI/CD design — Tier 0 local preflight is built, Tiers 1-2 are designed and dormant)
 - [[Gotchas]] — things that have bitten before and will bite again
 - [[Collaboration Style]] — how Boris likes to work through hard technical decisions
 - [[People & Context]] — org structure, teams, review history, dynamics
