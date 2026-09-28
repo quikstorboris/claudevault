@@ -65,6 +65,24 @@ The single most valuable piece of outside knowledge to bring into this design: G
 
 **Before Tier 1 is ever turned on**, every one of the 6 controls above should be true, not just the workflow YAML's use of a service container. A first Tier-1 PR that only adds the GitHub Actions workflow file without also making these guarantees structural (env var naming, the runtime guard, `#[sqlx::test]` adoption where applicable) should be treated as incomplete, not shippable.
 
+## Containerization — phased plan (2026-09-28)
+
+Boris's framing: time/token cost is irrelevant here (company-paid, no schedule pressure) — the only real cost is his own attention and future maintenance burden, and he's explicitly taking on the "orchestrator" role while Claude executes/debugges the container tooling across future sessions. That changes the calculus from the CI tiers above (which are paced by *his* daily friction) to being paced by *genuine engineering payoff*, not urgency. All technical standards for every phase below are LAW, not suggestions — see [[UnitPrep Docker Standards]] for the full, non-negotiable technical detail (base image choices, caching strategy, security baseline). This section is the phased roadmap; that doc is the how.
+
+| Phase | What | Status | Why this phase, why this order |
+|---|---|---|---|
+| 1. DB-only | `docker-compose.yml`, one `postgres:18` service (matches the real Neon version), for local ephemeral test isolation | **In the pipeline now** | Already justified independent of everything else below — the local half of the mission-critical isolation requirement above. Zero impact on the existing native dev workflow otherwise. |
+| 2. `unitprep-api` dev container | Long-lived container (not rebuilt per code change), source bind-mounted, `cargo` registry + `target/` as named volumes, `cargo watch` inside | **In the pipeline now** | Environment parity + a genuine engineering exercise; must follow [[UnitPrep Docker Standards]]'s caching rules exactly or it becomes an iteration-speed regression instead of an improvement. |
+| 3. `unitprep-ui` dev container | Same pattern — bind-mounted source, `node_modules`/`.next` as named volumes, `next dev` inside | **In the pipeline now** | Same reasoning as phase 2, mirrored for the frontend. |
+| 4. Production-shaped multi-stage image | Minimal runtime image (`debian:bookworm-slim` or `distroless`, given the `openssl-sys`/webauthn constraint documented in [[UnitPrep Docker Standards]]) for actual deployment | **Documented now, execution trigger-gated** | Building a deployment image for a deployment model that hasn't been decided (single-instance vs. multi-instance — the CTO assessment's own open question) means designing against a guess. Same "dormant until a real trigger" logic as CI Tier 2 — deliberately kept consistent rather than special-cased for containers. |
+| 5. Full `docker compose up` for everything | Combines 1-3 into one command | **Documented now, falls out naturally once 1-3 exist** | The "clone and run one command" onboarding win — real value once there's a second developer, negligible extra work once 1-3 already exist. |
+
+**Maintenance note**: this table and [[UnitPrep Docker Standards]] both get updated as each phase actually ships — "documented now" must not silently calcify into stale planning once the phase either happens or gets explicitly re-deferred.
+
+### Redis — deferred, documented, not built
+
+Considered alongside Docker since `core/src/session_store.rs`'s own doc comment already anticipated it ("FUTURE: RedisSessionStore will implement this trait exactly as InMemorySessionStore does"). **Decision: not now.** `DurableSessionStore`'s hot path never leaves in-process memory — Redis cannot improve on already-local-RAM access, so it would only speed up the cold rehydration path (once per session per process lifetime, already cheap). Redis's actual structural value — shared session cache and distributed rate limiting across multiple processes — only matters once there's more than one process, which is exactly phase 4's multi-instance question. Unlike Docker phase 1 (which has a real payoff today regardless of anything else), Redis has zero functional benefit until that same trigger fires. **Tied to the same trigger as phase 4** — revisit together, not separately.
+
 ## Tier 2 trigger conditions — dormant is a decision, not a default to drift into
 
 Since Tier 2 is deliberately dormant rather than abandoned, these are the concrete conditions that should prompt an *active* decision about turning some part of it on — not something to silently notice six months late:
@@ -111,11 +129,15 @@ Cross-repo type-generation drift enforcement (tracked separately in [[CI Backlog
 | 1 | Split fast/slow GH Actions, ephemeral-Postgres DB tests | Designed, not enabled — all 6 isolation controls are a precondition, not a follow-up |
 | 2 | Branch protection, PR review, `dev` branch, scheduled scans | Designed, dormant until 2nd developer |
 | — | `cargo-audit`/`gitleaks` tooling install | Next concrete Tier-0 addition, not urgent |
+| Docker 1-3 | Local ephemeral-DB compose, `unitprep-api`/`unitprep-ui` dev containers | **In the pipeline** — see [[UnitPrep Docker Standards]] for the LAW-level technical detail |
+| Docker 4-5 | Production image, full compose orchestration | Documented, execution gated on the same trigger as CI Tier 2 |
+| Redis | Session-store backend option | Documented, deferred, tied to the Docker phase 4 trigger |
 
 ## Related
 
 - [[Compliance & Process Readiness]] — the earlier governance-level deferral decision this framework gives actual shape to
 - [[CI Backlog]] — specific pre-framework check ideas (generate-types drift), now slotting into the tiers above
+- [[UnitPrep Docker Standards]] — the non-negotiable technical LAW for every Docker artifact this project produces, referenced by the containerization phases above
 - [[Gotchas]] — the version-bump-skipped mistake Tier 0's new check exists to catch, and the leaked-credential incident behind the secret-scan step
 - [[Patterns]] — the `dev`-branch anticipation from 2026-07-23, and the "batch, don't checkpoint" commit cadence Tier 0/1's push-vs-tag split is built around
 - [[Key Decisions]]
