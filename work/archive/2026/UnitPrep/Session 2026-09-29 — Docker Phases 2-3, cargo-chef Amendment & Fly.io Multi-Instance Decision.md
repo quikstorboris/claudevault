@@ -1,7 +1,7 @@
 ---
 date: "2026-09-29"
 quarter: "Q3-2026"
-description: "Walked through the Option A/B dev-container tradeoff from scratch for a non-technical audience, named Fly.io as the target host with a standing multi-instance design assumption, then built and empirically verified unitprep-api's Docker Phase 2 dev container -- finding and fixing a real cargo-chef/volume-shadowing interaction, a missing rustup volume, and a test-db bootstrap gap along the way"
+description: "Walked through the Option A/B dev-container tradeoff from scratch for a non-technical audience, named Fly.io as the target host with a standing multi-instance design assumption, then built and empirically verified both unitprep-api's and unitprep-ui's Docker dev containers (Phases 2-3) -- finding and fixing a real cargo-chef/volume-shadowing interaction (both languages), a missing rustup volume, a test-db bootstrap gap, and a port collision with an already-running native next dev"
 tags:
   - work-note
   - project/unitprep
@@ -9,7 +9,7 @@ tags:
   - docker
 ---
 
-# Session 2026-09-29 — Docker Phase 2, cargo-chef Amendment & Fly.io Multi-Instance Decision
+# Session 2026-09-29 — Docker Phases 2-3, cargo-chef Amendment & Fly.io Multi-Instance Decision
 
 Same-day continuation of [[Session 2026-09-28 (Part 4) — Tier 0 CI Tooling Built (cargo-audit, gitleaks) with Real RUSTSEC and npm-audit Fixes|the prior day's Tier 0/Docker Phase 1 session]], from the same Windows-session-reaching-into-WSL setup. Boris asked what's next on the Docker/CI menu, picked Docker Phase 2, then paused to actually understand the mechanics before deciding anything ("most of it is over my head... I need more to go on") — the whole first half of this session is a deliberately slow, plain-language walkthrough of Docker concepts for a non-technical audience, one decision at a time, rather than building first and explaining after.
 
@@ -41,14 +41,32 @@ Asked directly what to prepare for, hosting-wise. Most of it already lined up by
 
 **Shipped**: `unitprep-api` `v1.9.43` → `v1.9.44` (4 commits: Phase 1's dev-container addition, the bootstrap script, then the version bump — plus the Phase 1 compose file itself landed as `v1.9.43` earlier this session before the teaching-pass conversation), all tagged and pushed.
 
+## Docker Phase 3, built and verified — same day, straight after Phase 2
+
+Asked to outline next steps first (Phase 3, the `TEST_DATABASE_URL`-vs-`DATABASE_URL` gap Phase 2 surfaced, and everything still deliberately deferred), then picked Phase 3. A real clarifying moment along the way: Boris asked whether the *local ephemeral* `test-db` and *Neon's dev branch* (the real, persistent, shared database "everything lands in first") were the same thing — worth a clear, plain-language disambiguation before building anything further, since conflating them would have defeated the entire isolation design.
+
+Mirrored Phase 2's pattern for `unitprep-ui`, with the same "would get shadowed" reasoning applied to Node this time: `npm ci` runs at container *start*, not build time, since `node_modules` is a named volume at the exact path a build-time install would use (documented as a second Docker Standards Amendment, same underlying mechanism as `cargo-chef`'s). Added `.nvmrc` (pins `24.19.0`, matching local `nvm` and the Docker base tag exactly) and `.dockerignore` — both already flagged as missing in `UnitPrep Docker Standards.md`'s verified facts.
+
+**One real difference from Phase 2, reasoned through rather than copy-pasted**: `next dev` *is* the live app server (unlike `api-dev`'s test-watch loop), so a `HEALTHCHECK` against `/api/health` genuinely applies here.
+
+**Two real findings during build/verification:**
+1. **Port 3000 was already taken** by a native `next dev` process already running on this machine — same shape of finding as Phase 1's native-Postgres-on-5432 discovery. Remapped the host side only (`3001 → 3000`), left the existing process alone.
+2. **A version-check false alarm during the version bump**, not a Docker issue: `npm install --package-lock-only` surfaced a brand-new moderate `undici` advisory (published since the prior day's `npm audit` run) — fixed via `npm audit fix`, verified via a full `preflight.sh` re-run, `unitprep-ui` back to 0 vulnerabilities.
+
+**Verified empirically, in order**: image builds; container starts healthy; reachable at `localhost:3001` from both WSL and Windows; a host-side edit introducing a real syntax error was detected and reported (HTTP 500 with the exact parser error) with no manual restart, then recovered to HTTP 200 once fixed — the same "prove it, don't just start it" bar as Phase 2's Rust test; `--force-recreate` reused the `node_modules` volume, no slow reinstall.
+
+Also caught and fixed a small self-inflicted mistake mid-session: reflexively `chmod +x`'d the new `.dockerignore` out of habit from the Rust-side executable-bit gotcha — wrong reflex, `.dockerignore` should never be executable. Caught before pushing (`git ls-files -s` showing `100755`), fixed via amend since still unpushed.
+
+**Shipped**: `unitprep-ui` `v1.6.44` → `v1.6.45` (3 commits: the dev container, the `undici` fix, the version bump), tagged and pushed.
+
 ## Vault updated
 
-[[UnitPrep Docker Standards]] gained two Amendments entries (the cargo-chef/volume-shadowing interaction, the missing `cargo-rustup` volume) and an updated named-volumes list. [[UnitPrep CI-CD Framework]]'s phase table, status summary, Phase 4 row, and Redis section all updated. [[Key Decisions]] gained the Fly.io/multi-instance entry.
+[[UnitPrep Docker Standards]] gained two more updates: a third Amendments-adjacent note (the Next.js `npm ci`-at-start pattern, cross-referencing the cargo-chef entry) and the `.dockerignore`/`.nvmrc` verified-facts lines marked closed. [[UnitPrep CI-CD Framework]]'s Phase 3 row and status summary updated to built. [[Key Decisions]] gained the Fly.io/multi-instance entry (Phase 2 half of this session). This note itself was renamed mid-session (`Docker Phase 2` → `Docker Phases 2-3`) once Phase 3 became part of the same day's work, per the vault's single-source-status law — all three referencing files updated to match.
 
 ## Related
 
 - [[Session 2026-09-28 (Part 4) — Tier 0 CI Tooling Built (cargo-audit, gitleaks) with Real RUSTSEC and npm-audit Fixes]] — same-day predecessor (previous calendar day), Docker Phase 1
-- [[UnitPrep CI-CD Framework]] — Phase 2 status, Phase 4/Redis assumption updated this session
-- [[UnitPrep Docker Standards]] — two new Amendments entries, this session's primary technical artifact
+- [[UnitPrep CI-CD Framework]] — Phase 2/3 status, Phase 4/Redis assumption updated this session
+- [[UnitPrep Docker Standards]] — three Amendments/verified-facts updates, this session's primary technical artifact
 - [[Key Decisions]] — the Fly.io/multi-instance decision
 - [[Patterns]] — the vault-push-batched-to-EOD refinement (set this session, before the Docker work began)
