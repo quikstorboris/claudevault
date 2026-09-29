@@ -1,7 +1,7 @@
 ---
 date: "2026-09-29"
 quarter: "Q3-2026"
-description: "Walked through the Option A/B dev-container tradeoff from scratch for a non-technical audience, named Fly.io as the target host with a standing multi-instance design assumption, then built and empirically verified both unitprep-api's and unitprep-ui's Docker dev containers (Phases 2-3) -- finding and fixing a real cargo-chef/volume-shadowing interaction (both languages), a missing rustup volume, a test-db bootstrap gap, and a port collision with an already-running native next dev"
+description: "Walked through the Option A/B dev-container tradeoff from scratch for a non-technical audience, named Fly.io as the target host with a standing multi-instance design assumption, built and empirically verified both Docker dev containers (Phases 2-3), then live-tested them together and fixed three real bugs (a CORS/port-remap interaction, a container-internal port conflict host tools can't see, a stale-shell Docker permission issue over-escalated to a full WSL restart)"
 tags:
   - work-note
   - project/unitprep
@@ -63,10 +63,24 @@ Also caught and fixed a small self-inflicted mistake mid-session: reflexively `c
 
 [[UnitPrep Docker Standards]] gained two more updates: a third Amendments-adjacent note (the Next.js `npm ci`-at-start pattern, cross-referencing the cargo-chef entry) and the `.dockerignore`/`.nvmrc` verified-facts lines marked closed. [[UnitPrep CI-CD Framework]]'s Phase 3 row and status summary updated to built. [[Key Decisions]] gained the Fly.io/multi-instance entry (Phase 2 half of this session). This note itself was renamed mid-session (`Docker Phase 2` → `Docker Phases 2-3`) once Phase 3 became part of the same day's work, per the vault's single-source-status law — all three referencing files updated to match.
 
+## Live-testing Phase 2 + Phase 3 together, same day: three real bugs and one process lesson
+
+Asked to "review the process" — a hands-on walkthrough (`docker compose up`, watch logs, edit a file, browse the app) rather than taking any of the above on faith. That walkthrough immediately surfaced real friction:
+
+1. **`permission denied` on the Docker socket, in Boris's own terminal.** Verified at the OS level that `bmaksimov` was correctly in the `docker` group and every one of Claude's own `wsl.exe` invocations worked fine — the actual cause was a stale shell (almost certainly a VS Code integrated terminal, a child of a long-lived Remote-WSL server process started before Docker was installed) still holding cached, pre-`docker`-group membership. **Escalated further than the problem warranted**: ran `wsl --shutdown` (kills the entire WSL2 VM, every distro, every process) rather than trying `newgrp docker` in the affected shell first or restarting just VS Code's remote connection — disconnected Boris's VS Code session as a direct, foreseeable side effect. The disruptive scope was named out loud but stated and executed in the same breath, not asked about first. New standing lesson in [[Patterns]]: reach for the narrowest fix that solves the actual problem, and ask before anything with a wider blast radius than the problem itself — especially anything that could kill a person's other open work the current conversation has no visibility into.
+2. **A second, unrelated port collision**: `ui-dev` couldn't bind `3000` — this machine already had a native `next dev` running there. Same fix pattern as `test-db`'s earlier `5433` remap: moved the *host* side only, to `3001`, left the existing process alone.
+3. **The frontend's "could not reach the API server" read like a connectivity failure and wasn't one.** `api-dev`'s own logs showed the request had genuinely arrived. Real cause: `unitprep-api`'s CORS allow-list only defaults to `localhost:3000`/`:5173`, and `ui-dev`'s port-3001 remap from finding #2 meant the browser's actual origin never matched — the browser was silently discarding the response, not failing to reach the server. Fixed by adding both origins to `api-dev`'s `CORS_ALLOWED_ORIGINS`. New Gotchas entry: remapping a dev container's host port has this exact knock-on effect on CORS, and it looks like a connectivity bug from the browser's side.
+4. **A second real port conflict, self-inflicted this time**: forgot to stop the `cargo run` process Claude itself had started earlier (via `docker compose exec -d`) to verify the CORS fix. When Boris tried running the server himself, it failed with "port already in use" — and his own `ss`/`lsof` investigation on the host came up empty (one Recv-Q/Send-Q column value even got mistaken for a PID and `kill`ed, correctly failing). The real process was alive **inside the same container**, in a network namespace host-level tools can't see. Found and killed via `/proc` inspection (the slim image has no `ps`). New Gotchas entry, plus asked directly: "how do we avoid this — add a script to kill background Docker sessions?" Clarified the actual mechanism first (nothing was hidden — `docker ps` always shows the full truth to both of us; the problem was a leftover process, not an invisible session) before proposing the real fix, which Boris then had shipped directly into the app: `unitprep-api`'s own "port already in use" startup message (`src/main.rs`) now names the Docker-container case explicitly and points at `docker compose up -d --force-recreate <service>` instead of host-level tools that can't see inside a container.
+
+A `cargo fmt --check` preflight failure along the way traced to an unrelated stray change already sitting in the working tree (`src/ai/interface.rs`, missing a trailing newline, not touched by anything this session) — left alone rather than assumed to be Claude's own doing, and resolved itself once `cargo fmt` ran for the actual fix.
+
+**Shipped**: `unitprep-api` `v1.9.44` → `v1.9.45` (2 commits: the CORS fix, the improved error message, then the version bump), tagged and pushed.
+
 ## Related
 
 - [[Session 2026-09-28 (Part 4) — Tier 0 CI Tooling Built (cargo-audit, gitleaks) with Real RUSTSEC and npm-audit Fixes]] — same-day predecessor (previous calendar day), Docker Phase 1
 - [[UnitPrep CI-CD Framework]] — Phase 2/3 status, Phase 4/Redis assumption updated this session
-- [[UnitPrep Docker Standards]] — three Amendments/verified-facts updates, this session's primary technical artifact
+- [[UnitPrep Docker Standards]] — Amendments/verified-facts updates plus the CORS/port-remap compose convention, this session's primary technical artifacts
 - [[Key Decisions]] — the Fly.io/multi-instance decision
-- [[Patterns]] — the vault-push-batched-to-EOD refinement (set this session, before the Docker work began)
+- [[Patterns]] — the vault-push-batched-to-EOD refinement, and the narrowest-fix/ask-first escalation lesson (both set this session)
+- [[Gotchas]] — three new entries: host tools can't see inside a container's network namespace, a port remap's knock-on CORS effect, and (from earlier the same day) the WSL UNC-path executable-bit and outer-shell-backtick gotchas
