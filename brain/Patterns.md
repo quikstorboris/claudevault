@@ -75,6 +75,8 @@ Keep UnitPrep commit messages dry, technical, and focused on what changed and wh
 
 **How to apply**: when a fix originates from an external review/analysis (another AI tool, a colleague's comment, etc.), describe the technical problem and fix directly — skip the "X flagged this" framing entirely.
 
+**Recurred 2026-09-29**: happened again, same shape exactly — a commit fixing an RLS-bypass issue opened with "Found via external review, 2026-09-29:" (see [[Session 2026-09-29 (Part 2) — Grok Review Follow-Through, TEST_DATABASE_URL Isolation Control & a Real Postgres DO-Block Bug]]). Caught by checking this file *after* already writing and pushing the commit, not before. Fixed via `git reset` + `cherry-pick` to a corrected message, verified the resulting tree was byte-identical to the original, then `--force-with-lease` pushed. **The actual gap this rule keeps hitting**: this note gets consulted for *design* decisions and architectural questions, but not reliably before writing an ordinary commit message during fast-moving implementation work — the same failure mode already named in this vault's own [[Dev Principles]] discussion elsewhere (a rule that lives only in memory/vault, not in a place that fires automatically at the moment it's needed, gets skipped under normal task momentum). No structural fix applied yet; noting the pattern of *when* this rule gets missed, not just that it gets missed.
+
 ## UnitPrep: keep server logs greppable
 
 Whenever adding or improving a server log line in `unitprep-api`, keep it structured and greppable — consistent field names (`session_id`, `file`/`file_name`, `error`, etc.) via `tracing`'s structured fields rather than free-form interpolated strings.
