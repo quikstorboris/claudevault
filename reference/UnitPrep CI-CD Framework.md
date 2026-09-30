@@ -46,7 +46,8 @@ The key move that reconciles "fast" with "thorough": **split by cost, not by rep
 - **On a version-tag push only** (i.e., at actual release cadence — the same boundary this project already uses for "this is real, shippable work," not per-commit): the full, slower `cargo test --workspace` / `npx vitest run`, plus (`unitprep-api` only) the DB-only `#[ignore]`'d tests against the ephemeral Postgres service container (see below). This naturally throttles the expensive gate to roughly the release cadence already established (tens of times a month, not 100+), without needing an artificial rule about which commits get the heavy treatment.
 - **Caching**: `Swatinem/rust-cache` (purpose-built for Cargo, meaningfully better than generic `actions/cache` for incremental Rust builds) for the Rust job; standard `actions/setup-node` with its built-in npm cache for the UI job.
 - **Path-filtered triggers**: `paths-ignore: ['**.md']` in both — a docs-only commit doesn't trigger either job (matches this project's own "no version bump for docs-only" convention — CI mirrors that same judgment).
-- **Verification note**: no `gh` CLI/token available in the session that built this, so both workflows were validated with `actionlint` (schema + embedded-shellcheck, both clean) and the underlying scripts tested locally against a real Postgres before wiring in. **(TBC)** the actual first live GitHub Actions run — needs confirming on the Actions tab directly, not verifiable by the agent that built it.
+- **Verification note**: no `gh` CLI/token available in the session that built this, so both workflows were validated with `actionlint` (schema + embedded-shellcheck, both clean) and the underlying scripts tested locally against a real Postgres before wiring in.
+- **Confirmed live, 2026-09-30** (see [[Session 2026-09-30 — First Live Tier 1 CI Run Verified Green]]): the `v1.9.48` tag push triggered `unitprep-api`'s `full-tests` job for real on GitHub's own runners — ephemeral `postgres:18` service container, all migrations replayed, `bootstrap_test_db.sh` ran unmodified against it (the same script Docker Phase 1 uses locally), full `cargo test --workspace` (654 passed, 0 failed, 35 intentionally-ignored) plus all 17 DB-only `#[ignore]`'d tests via the CI-only allowlist script — genuinely green end to end, closing the verification gap this line used to carry as **(TBC)**. `fast-checks` correctly did *not* run on this push — it's gated to non-tag pushes by design (isolation control intact, not a bug); still needs a plain non-tag commit to confirm that job fires too.
 
 ## The ephemeral-Postgres trick — solves "DB tests in CI" without ever touching Neon
 
@@ -131,7 +132,7 @@ Cross-repo type-generation drift enforcement (tracked separately in [[CI Backlog
 | Tier | What | Status |
 |---|---|---|
 | 0 | Local pre-flight scripts | **Built** — `scripts/preflight.sh` in both repos |
-| 1 | Split fast/slow GH Actions, ephemeral-Postgres DB tests | **Built 2026-09-29**, `unitprep-api` `v1.9.48` / `unitprep-ui` `v1.6.46` — all 6 isolation controls were true first |
+| 1 | Split fast/slow GH Actions, ephemeral-Postgres DB tests | **Built 2026-09-29, confirmed live 2026-09-30** (`unitprep-api` `full-tests` job green on the real `v1.9.48` tag push) — all 6 isolation controls were true first |
 | 2 | Branch protection, PR review, `dev` branch, scheduled scans | Designed, dormant until 2nd developer |
 | — | `cargo-audit`/`gitleaks`/`npm audit` tooling install | **Built 2026-09-28** — all wired into preflight in both repos |
 | Docker 1 | Local ephemeral-DB compose (`docker-compose.yml`, `postgres:18`) | **Built 2026-09-28**, `unitprep-api` `v1.9.43` — verified empirically (up/healthy/connect/down, zero volumes left) |
