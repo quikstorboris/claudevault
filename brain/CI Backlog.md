@@ -22,7 +22,9 @@ This note is now specifically for check ideas that don't yet have an obvious hom
 
 **What the check would do**: re-run the generator and fail if the regenerated output differs from what's committed in `unitprep-ui`. Doesn't fit either repo's own Tier 0/1 cleanly since it needs both repos checked out together — explicitly named as out of scope in [[UnitPrep CI-CD Framework]] for exactly that reason, its own separate shape of problem.
 
-**Current mitigation**: the manual-discipline version (remember to run `npm run generate-types` after touching a covered struct) is documented in `types/generated/README.md` and is working so far.
+**Built 2026-09-30** (`unitprep-api` `v1.9.50`, `unitprep-ui` `v1.6.48`; in both repos `scripts/preflight.sh` is now 9 steps): `unitprep-api/scripts/check_ts_bindings.sh` runs the same `cargo test export_bindings` generation into a temp dir and diffs it against `unitprep-ui/types/generated` (hand-written `README.md`/`index.ts` excluded; a stale extra file counts as drift). Wired as preflight step 9/9 in both repos (sibling checkout, skips if absent) and as a tag-push step in `unitprep-api`'s `full-tests` CI job against a checkout of `unitprep-ui` `main` -- tag-only on purpose, since checking every push would fail in the gap between the API commit and the UI commit. The cross-repo checkout needs no token only because `unitprep-ui` is public; making it private would need a secret, which `check_workflow_secrets.sh` would block until deliberately updated. Negative-tested (modified file, stale file, missing sibling). Covers only structs marked `#[ts(export)]`; hand-mirrored shapes in `types/api.ts` remain unchecked. Not yet seen in a live CI run.
+
+**Previous mitigation (still valid as the fix procedure)**: the manual-discipline version (remember to run `npm run generate-types` after touching a covered struct) is documented in `types/generated/README.md` and is working so far.
 
 ## Related
 

@@ -100,6 +100,7 @@ Record any deliberate deviation from the rules above here, with the date and why
 ## Related
 
 - [[UnitPrep CI-CD Framework]] — the phased containerization plan (phases 1-5) this doc is the technical standard for
+- [[UnitPrep Docker Cheat Sheet]] — day-to-day start/stop/restart/log commands for the dev containers this doc governs
 - [[Gotchas]] — the real leaked-credential incident behind the `.env.local`/`.dockerignore` rule
 - [[Dev Principles]] — #9 (least privilege) behind the non-root-user rule, #12 (verify empirically) behind this doc's own "verified facts" section
 - [[Key Decisions]] — the Debian-over-Alpine base image decision, the Redis deferral
