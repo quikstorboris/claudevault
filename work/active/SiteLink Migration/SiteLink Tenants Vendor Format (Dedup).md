@@ -9,7 +9,7 @@ project: unitprep
 
 # SiteLink Tenants Vendor Format (Dedup)
 
-Status as of 2026-10-01: code, migration and tests **committed and pushed** in `unitprep-api` `v1.9.54` (`3ddb33f`). Migration **applied to the Neon dev DB 2026-10-01** (with the QuikStor Cloud one; prod not touched). The running API reads the vendor registry into a cache, so restart it (or wait for the refresh) before SiteLink files are recognized. First client: LG Squared (see [[SiteLink Migratable Data - LG2 (pull 2026-10-01)]]).
+Status as of 2026-10-01: code, migration and tests **committed and pushed** in `unitprep-api` `v1.9.54` (`3ddb33f`). Migration **applied to the Neon dev DB 2026-10-01** (with the QuikStor Cloud one; prod DB branch synced 2026-10-02). The running API reads the vendor registry into a cache, so restart it (or wait for the refresh) before SiteLink files are recognized. First client: LG Squared (see [[SiteLink Migratable Data - LG2 (pull 2026-10-01)]]).
 
 ## Which SiteLink files are dedup inputs
 

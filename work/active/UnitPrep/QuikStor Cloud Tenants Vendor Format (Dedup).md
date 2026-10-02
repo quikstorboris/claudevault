@@ -9,7 +9,7 @@ project: unitprep
 
 # QuikStor Cloud Tenants Vendor Format (Dedup)
 
-Status: code + migration **committed and pushed** in `unitprep-api` `v1.9.54` (`3ddb33f`); migration **applied to the Neon dev DB 2026-10-01** (prod not touched). The API caches the registry, so restart it for the row to be recognized.
+Status: code + migration **committed and pushed** in `unitprep-api` `v1.9.54` (`3ddb33f`); migration **applied to the Neon dev DB 2026-10-01** (prod DB branch synced 2026-10-02). The API caches the registry, so restart it for the row to be recognized.
 
 Closes the parked to-do in [[qms-also-needs-registering-as-a-dedup-tenants-vendor-format]] (the QMS tenants side), using a real preliminary pull from Freeland Warehousing & Storage (`1st Prelim Pull/Tenants.csv`, 126 rows).
 

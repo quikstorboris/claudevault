@@ -9,7 +9,7 @@ project: unitprep
 
 # Dedup Tenant-ID Grouping and Duplicate Customer Records
 
-Status as of 2026-10-01: **committed and pushed** as `unitprep-api` `v1.9.55` and `unitprep-ui` `v1.6.53`. Migration `20261001150000` (the `TenantId` mappings) **applied to the Neon dev DB**; prod untouched. Restart the API to pick it up.
+Status as of 2026-10-01: **committed and pushed** as `unitprep-api` `v1.9.55` and `unitprep-ui` `v1.6.53`. Migration `20261001150000` (the `TenantId` mappings) **applied to the Neon dev DB**; prod DB branch synced 2026-10-02. Restart the API to pick it up.
 
 ## The change
 
