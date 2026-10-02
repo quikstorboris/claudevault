@@ -36,7 +36,7 @@ Zero flagged is expected, not a failure: SiteLink keeps contact on the tenant re
 
 ## Open
 
-- **Group Prep (units) deferred by decision, 2026-10-01** ("no need right now"). When picked up: source is Custom Unit Report (one row per unit, no tenant data; headers `UnitName, Type, Width, Length, Area, UnitSize, StandardRate, ...`); `Number` <- `UnitName`; **`UnitGroup` is the open question** - SiteLink prices by type x size (27 combinations over 308 units on LG2), and joining `Type` + `UnitSize` needs a small named transform, not a rename. Same notes are in the `sitelink-migration-analysis` skill.
+- **Group Prep (units) built 2026-10-02** (committed in `unitprep-api`, not yet released; registry row needs migration `20261002120000` applied to the dev DB branch, and an API restart for the 4 h cache). Boris decided **unit group = Type + UnitSize** ("both"), e.g. `Self Storage 10x20`: source is Custom Unit Report; transform `derive_sitelink_unit_group` appends `UnitGroup`; mapped `Number<-UnitName`, `UnitGroup`, `StandardRate`, `Width`, `Length`; the `X`/blank flag columns (Power, Climate, Inside, ...) are deliberately unmapped. On LG2 that gives 20 groups over 308 units (the 27 in the Price List is its type x size rows, not units). Sessions apply a detected vendor's transform at discovery (`Session::apply_vendor_transforms`, idempotent).
 - Alternate-contact comparison works (mapped from `*Alt`); business (`*Bus`) and additional (`*Add`) contact blocks are not compared (almost empty).
 
 ## Related

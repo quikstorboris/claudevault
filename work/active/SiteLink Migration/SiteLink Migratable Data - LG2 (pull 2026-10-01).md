@@ -116,8 +116,8 @@ Optional, only if the history is being migrated:
 | Area | Missing | Action |
 |---|---|---|
 | A20 | call and letter history (the pull has one day) | Calls and Notes, same wide date range as Receipts |
-| A16 | per-ledger charge history (what was billed, not just what was paid) | per-ledger charge/payment history report (name TBC) |
-| A10 | special / concession / discount plan definitions | export the discount plan setup (report name TBC) |
+| A16 | per-ledger charge history (what was billed, not just what was paid) | per-ledger charge/payment history report (name TBC: not among the 36 reports in the 1st Pull folder -- pick it from SiteLink's report catalog with the client) |
+| A10 | special / concession / discount plan definitions | export the discount plan setup (name TBC: not among the 36 reports in the 1st Pull folder -- pick it from SiteLink's report catalog with the client) |
 | A18 | notice schedule, late-fee automation, lien/auction steps ("Past Due Events" disabled on some ledgers) | screenshots or setup export |
 | - | merchandise item list (GL 1200s/4060/5000s exist) | export merchandise setup |
 | - | tax rates (only a per-ledger tax-exempt flag) | confirm with client |
