@@ -6,7 +6,7 @@ tags: [reference, unitprep, neon]
 
 # UnitPrep Prod DB Sync Procedure
 
-Status as of 2026-10-02. Everything runs on Boris's laptop; GitHub Actions only tests against a throwaway Postgres and never touches Neon. Syncing the prod DB branch is **manual and on request** ("sync prod"), not automatic. Prod holds real data (users, invites, the tag catalog; see [[Auth & Persistence Index]]); dev holds real QS clients that are deliberately **not** copied to prod. Last sync: 2026-10-02, 32 migrations, prod at `20261001150000`.
+Status as of 2026-10-02. Everything runs on Boris's laptop; GitHub Actions only tests against a throwaway Postgres and never touches Neon. Syncing the prod DB branch is **manual and on request** ("sync prod"), not automatic. Prod holds real data (users, invites, the tag catalog; see [[Auth & Persistence Index]]); dev holds real QS clients that are deliberately **not** copied to prod. Last sync: 2026-10-02 -- 32 migrations to `20261001150000`, then 2 more (SiteLink Group Prep row, `source_encrypted`) to `20261002130000`; dev and prod DB branches both at 92 migrations, schema-identical.
 
 ## Steps (all in WSL, from `~/Development/unitprep-api`)
 
