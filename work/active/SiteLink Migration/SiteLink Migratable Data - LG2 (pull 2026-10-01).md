@@ -109,7 +109,7 @@ Non-data files: 3 site-map PNGs (SiteLink, Goodlew Earth, survey), rental agreem
 
 ## 5. Gaps - re-pull or ask the client
 
-**The one report that needs complete history: Receipts** (the pull's `Receipts` / `Receipt Details` reports). Re-run it with the date range from the facility's first transaction (earliest move-in in the data is 2006-07-01) through today. It is the only source of transaction-level payments per tenant; every other payment file is a total or a single day. Include both layouts if the pull offers both: Receipt Details has charge description, check/card reference and authorization code per line; Receipts has tender columns plus `TenantID`.
+**No complete payment history is needed (Boris, 2026-10-02):** transaction history is **not imported into QMS at migration**, so there is no re-pull for `Receipts` / `Receipt Details`, and the single-day receipt files and YTD totals here are enough as control totals. The same applies to per-ledger charge/payment history (A16) and call/letter history (A20): not migrated, not a gap. (Earlier versions of this note called Receipts the one report needing complete history; that is superseded.)
 
 Optional, only if the history is being migrated:
 

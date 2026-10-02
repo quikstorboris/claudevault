@@ -19,4 +19,4 @@ Both scripts read `NEON_PROD_DATABASE_URL_DIRECT` from `.env.local` by extractin
 
 ## The `app_service` password on the prod branch
 
-Unset today, which is fine because nothing runs against prod. When something needs to: connect with the direct (owner) URL, run `\password app_service`, then put the URL with that password into `NEON_PROD_DATABASE_URL_APP` in `.env.local`. Roles are per Neon branch, so this is independent of dev.
+Set 2026-10-02 (random 48-hex-char password, written only into `NEON_PROD_DATABASE_URL_APP` in `.env.local`, never printed; login verified as `app_service`; the previous file is kept as `.env.local.pre-prod-app-pw`, gitignored). Nothing reads it yet. To rotate: connect with the direct (owner) URL, run `password app_service`, update the same `.env.local` line. Roles are per Neon branch, so this is independent of dev.
