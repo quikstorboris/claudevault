@@ -108,3 +108,5 @@ Incident docs live in `work/incidents/`. See `Incidents.base` for overview.
 ## Archive
 
 -
+
+- [[Winsen Dedup Vendor Format - Required Testing]] — checklist for registering Winsen/Sentinel tenant exports for dedup (blocked on a sample file); see also [[UnitPrep Prod DB Sync Procedure]] for the manual prod DB branch sync.
