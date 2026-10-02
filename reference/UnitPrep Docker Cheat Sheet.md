@@ -80,7 +80,7 @@ Ctrl-C stops watching, not the container. `--tail 50` starts from the last 50 li
 ## Gotchas
 
 - **Which database does `cargo run` hit?** The compose file only sets `TEST_DATABASE_URL` (the throwaway `test-db`, used by the test loop). The server very likely reads `.env.local` through the bind mount and so talks to the real Neon dev branch -- (unverified as of 2026-10-01). Check before assuming the containerised app touches only throwaway data.
-- **Docker is a little slower than native** -- port forwarding, Next file watching, debug builds. Expected, not a fault; native `cargo run` / `next dev` is the fast path. (Bind mounts are not the cause: `~/Development` is on WSL's own filesystem.)
+- **Docker itself costs almost nothing; the dev server is a debug build.** `docker compose exec api-dev cargo run` builds without `--release`, which is roughly 10x slower on allocation-heavy loops (a dedup check measured 8.7 s natively in debug vs 0.84 s in release, with Docker adding ~0.4 s on top of that; see [[Gotchas]]). Port forwarding and Next file watching are small by comparison. (Bind mounts are not the cause: `~/Development` is on WSL's own filesystem.) For a fast API run use `cargo run --release` natively in WSL.
 - **`pkill` doesn't exist in the image, and PowerShell commands don't run in the WSL shell** -- both cost a round trip on 2026-09-30.
 
 ## Related
