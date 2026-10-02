@@ -8,7 +8,7 @@ quarter: Q4-2026
 
 # Winsen Dedup Vendor Format - Required Testing
 
-Status as of 2026-10-02: **sample found and analyzed (Highway 20 Self Storage, Prairie Enterprises LLC, `Preliminary Data/1st Pull`); build not started, awaiting Boris's go-ahead.** Earlier this note said blocked on a sample. No Winsen tenant export has been seen yet, so no registry row exists. Boris is waiting on real data. This list is drafted from how SiteLink and QuikStor Cloud were onboarded (see [[SiteLink Tenants Vendor Format (Dedup)]], [[QuikStor Cloud Tenants Vendor Format (Dedup)]], [[Dedup Tenant-ID Grouping and Duplicate Customer Records]]); the Winsen-specific items are inferred (TBC) until a file arrives. The only Winsen file seen so far is a *unit list* (`Pyott_Road_Winsen_unit_list_Boris.csv`, a Group Prep case, not dedup).
+Status as of 2026-10-02: **built and committed (not yet released); migrations `20261002150000` and `20261002160000` applied to the dev DB branch, not prod.** Sample: Highway 20 Self Storage, Prairie Enterprises LLC, `Preliminary Data/1st Pull`. Earlier this note said blocked on a sample. No Winsen tenant export has been seen yet, so no registry row exists. Boris is waiting on real data. This list is drafted from how SiteLink and QuikStor Cloud were onboarded (see [[SiteLink Tenants Vendor Format (Dedup)]], [[QuikStor Cloud Tenants Vendor Format (Dedup)]], [[Dedup Tenant-ID Grouping and Duplicate Customer Records]]); the Winsen-specific items are inferred (TBC) until a file arrives. The only Winsen file seen so far is a *unit list* (`Pyott_Road_Winsen_unit_list_Boris.csv`, a Group Prep case, not dedup).
 
 ## What is needed first
 
@@ -49,3 +49,20 @@ Measured: unit + name is a safe join (no duplicate keys in the contact report; 0
 2. **Multi-file join** (deferred earlier; this is the second case after Freeland): primary contact report plus email and rent roll joined on unit + normalized name, then one normal dedup run. Needs registry roles (primary / supporting join sources), the "Files required" panel text, and run history for several source files (`tool_runs` is single-source today).
 3. Registry rows for the three formats with `TenantId <- Cust ID`; tests per the list above using the real headers.
 4. Decisions needed: treat units absent from the rent roll as tenants without an id (name grouping) or skip them; use `multiple.xls` only as a cross-check; whether `passcode.xls` Other Parties map to alternate contacts.
+
+## Built 2026-10-02 (decisions from Boris)
+
+- **Units without a Cust ID** are held out and reported separately, with a prompt: **match by name** (compared with *everyone*, including tenants that have an id: "Winsen data is garbage so who knows how all other tenants are recorded") or **ignore**. Shown as a fourth collapsible section; included in the CSV/Excel export.
+- **Rematch from Onboarding Work:** a past run can be re-checked with the other choice (`client_ops.perform`). Because a joined run has several sources but only one stored source file, runs now also keep their normalized tenant records, encrypted (`tool_runs.records_encrypted`, `CLIENT_PII_ENCRYPTION_KEY`); runs recorded before that cannot be rematched. A rematch rewrites the run's stored report and regenerates its stored output file (a Dropbox copy is not touched).
+- **Dedup page:** "Back to facility" link at the top.
+- **Printed-report reader** (`core/src/parsing/printed_report.rs`): header found by labels, two-line headers joined, repeated headers and page/total rows dropped, data cells assigned to the nearest header edge on their left (the email report's data sits one column right of its header). Fires only on sheets with a `Page N` cell and a sparse title row.
+- **Join** (`dedup/src/join.rs`): generic, on unit + normalized customer name; fills blanks and adds columns; never overwrites. New registry file role `join`.
+- **Registry rows:** Winsen Tenant Cross Reference (primary), Tenant Email Address Report and Rent Roll Report (join). `CustNumb <- Unit`; `TenantId <- Cust ID`; business phone and `passcode.xls` not used (passcode.xls is gate codes only: 542 of 572 unit rows, no card numbers, Other Parties empty).
+
+Real-file result (counts only): 540 rows, 474 with a Cust ID, 66 without, 490 emails, 531 phones; 362 customers, 51 on several units, 9 people under more than one Cust ID; of 56 id-less names, 6 match an existing customer id and 1 of those has differing contact details. 16 ms default, 31 ms matching by name.
+
+## Known limits
+
+- A **local folder** of `.xls` files cannot be classified in the browser (it only reads `.xlsx`/`.csv` headers), so Winsen works from a Dropbox folder, where the server reads the files. Picking local `.xls` files shows them as unreadable.
+- Rows that appear on the contact report but not the rent roll are assumed to be non-rental or vacant units (TBC); they are handled by the prompt above.
+- Persisted Dedup sessions created before this release will not reload (the stored report gained a field).
