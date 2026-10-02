@@ -110,3 +110,5 @@ Incident docs live in `work/incidents/`. See `Incidents.base` for overview.
 -
 
 - [[Winsen Dedup Vendor Format - Required Testing]] — checklist for registering Winsen/Sentinel tenant exports for dedup (blocked on a sample file); see also [[UnitPrep Prod DB Sync Procedure]] for the manual prod DB branch sync.
+
+- [[Onboarding Work Tabs and Run Recording]] — Unit Group and Template Tagger runs now recorded; Onboarding Work split into per-activity newest-first tabs; Group Prep names the unit file in use.

@@ -511,3 +511,7 @@ Found 2026-10-01 in [[Dedup Folder Scan and File Requirements]] (performance sec
 
 **Guards added the same day (v1.9.56)**: `dedup/src/performance_tests.rs` (synthetic 800- and 2400-row facilities through the full pipeline in a debug build, budgets 2 s / 8 s; verified to fail at 4.7 s / 23 s with the pruning disabled), `src/api/slow_operation.rs` (WARN over 2 s on dedup checks and the Dropbox folder scan), dev-profile `opt-level = 2` for the dedup/core/unit-group crates and the csv/calamine parsers in `Cargo.toml` (the dedup test suite dropped from 0.40 s to 0.13 s), and a standing-law section in `unitprep-api/CLAUDE.md`.
 
+
+## Never run `prettier --write` on a directory in unitprep-ui (2026-10-02)
+
+The repo does not enforce prettier (eslint/tsc are the gates), so most existing files are not prettier-formatted. Running `npx prettier --write components/facility` to tidy two new files silently reformatted ~25 unrelated files (965 lines of noise). Format only the new files you wrote, by name, or not at all; check `git status` before committing and `git checkout --` anything you did not mean to change.
