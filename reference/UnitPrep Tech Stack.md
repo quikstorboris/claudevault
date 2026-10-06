@@ -11,7 +11,7 @@ Built 2026-10-01 from a full scan of `unitprep-api` (v1.9.55) and `unitprep-ui` 
 
 **STANDING RULE: whenever a new tool, library, service or infrastructure piece is introduced to either repo, add a row here in the same session and bump "Last updated" below.** The rule is also recorded in both repos' `CLAUDE.md` and in Boris's auto-memory.
 
-**Last updated:** 2026-10-01 (initial build). Current as of `unitprep-api` v1.9.55 / `unitprep-ui` v1.6.53.
+**Last updated:** 2026-10-05 (gzip response compression via tower-http `compression-gzip`; shared in-house outbound-HTTP retry/timeout helper `integrations::http`, no new crate). Earlier: 2026-10-02 (ClickUp integration + per-user permission grants). Current as of `unitprep-api` v1.9.65 (pending) / `unitprep-ui` v1.6.55.
 
 **Caveats for the presenter**
 - There is **no OAuth2/OIDC** for sign-in. Auth is passkeys (WebAuthn) plus TOTP. The only OAuth is the *outbound* Dropbox OAuth2 flow.
@@ -25,7 +25,7 @@ Built 2026-10-01 from a full scan of `unitprep-api` (v1.9.55) and `unitprep-ui` 
 | **Rust 1.96** (pinned in `rust-toolchain.toml`, 2021 edition, Cargo workspace of 7 crates) | Language and build | Whole backend. Crates: `core`, `dedup`, `unit-group`, `docx-surgeon`, `template-tagger`, `tagger-pipeline`, plus the root `unitprep` binary.<br>• Memory safety, no null or data-race crashes<br>• Pinned toolchain = identical builds locally and in CI<br>• Separate crates keep each tool's domain logic apart from HTTP orchestration |
 | **Axum 0.8** | HTTP API framework | Routing, multipart upload, extractors.<br>• Built on Tokio/Tower, async and middleware-friendly<br>• Typed extractors (authenticated user) make auth checks hard to forget |
 | **Tokio** | Async runtime | Concurrent I/O, e.g. parallel Process Street calls via `futures::join_all`.<br>• Standard Rust runtime<br>• Many in-flight requests without a thread each |
-| **Tower-HTTP** | Middleware | CORS, catch-panic, trace, request-id.<br>• Handler panic returns our own JSON 500 instead of dropping the connection<br>• Per-request correlation ID for traceable logs |
+| **Tower-HTTP** | Middleware | CORS, catch-panic, trace, request-id, gzip response compression (`compression-gzip`, added 2026-10-05; pulls `async-compression`, `compression-codecs`, `compression-core`, `tokio-util`).<br>• Handler panic returns our own JSON 500 instead of dropping the connection<br>• Per-request correlation ID for traceable logs<br>• Large JSON/CSV payloads shrink ~80-90%; already-compressed formats (ZIP, XLSX, DOCX, PDF) are excluded |
 | **tower_governor** (`governor`) | Rate limiting | Throttles unauthenticated auth endpoints.<br>• In-process, no new infrastructure<br>• Same self-hosted-library preference as the rest of auth |
 | **PostgreSQL 18** (Neon in dev, `postgres:18` in Docker) | Database | System of record: clients, auth, audit, tool runs.<br>• Row-Level Security, 70+ policies enforcing access in the DB itself<br>• `citext` (case-insensitive emails), `jsonb`, `pg_trgm` (fuzzy search)<br>• ~180 migration files, versioned and reversible (up/down) |
 | **Neon** | Managed Postgres | Hosted dev DB behind a transaction-mode PgBouncer pooler.<br>• Serverless Postgres, no DB server to run<br>• TLS-only |
@@ -90,6 +90,7 @@ Built 2026-10-01 from a full scan of `unitprep-api` (v1.9.55) and `unitprep-ui` 
 | **sqlx-cli 0.9** | Migrations | Applies migrations in CI. |
 | **Process Street API** | Integration | Read-only source for client/facility creation (Intake, Merchant, Contract workflows), replacing manual entry. |
 | **Dropbox API (OAuth2)** | Integration | File access for onboarding; credentials editable in an admin page, stored encrypted. |
+| **ClickUp API (v2, personal tokens)** | Integration | Per-user: each Orchestrator user connects their own ClickUp personal API token (stored encrypted, never shown again) so ClickUp work is attributed to them. Connection check built; task actions next. |
 | **Elavon / QMS** | Integration | Merchant account and pinpad credentials, synced and stored encrypted. |
 | **Cloudflare** (planned, not adopted) | Edge | Likely front door; would also give country-level geolocation for anomaly detection. |
 
