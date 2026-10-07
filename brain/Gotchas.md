@@ -536,3 +536,25 @@ Multi-line or quote-heavy `wsl.exe -d Ubuntu -- bash -lc "..."` through PowerShe
 ## A vendor's export can come in header VARIANTS: signatures need every one (2026-10-07)
 
 QuikStor Cloud's Freeland pull used `AddressLine/City/State/PostalCode`; Davidson Road's used `AddressStreet1/AddressCity/...` plus `Gender`. The registry signature required `AddressLine`, so nothing was recognized and dedup refused a manual selection. Add a row per variant (header supersets such as AlternateTenants go FIRST: detection takes the first match by id) and test with the real header row. See [[QuikStor Cloud Tenants Vendor Format (Dedup)]].
+
+
+## "I do not see the change": check the served bundle before debugging (2026-10-07)
+
+After a UI change, Boris twice reported a feature missing (the ClickUp prefetch calls, then the Copy destination picker). Each time the dev container's compiled output already had it and his open tab was stale. Check in seconds with `docker exec unitprep-ui-ui-dev-1 sh -c 'grep -rl "<a string from the change>" /app/.next/dev/static'` and the container log (`docker logs --since 30m unitprep-ui-ui-dev-1 | grep -i -E "error|Compiled"`), then ask for a hard refresh (Ctrl+Shift+R). A real "missing request" in the API log (here: no `prefetch-tasks` line) means the browser never sent it.
+
+## The auto-mode classifier can refuse to push the vault repo (2026-10-07)
+
+`git push` of `my-vault` (remote `claudevault`) was refused as an "out-of-place publication" even though Boris had asked for it, while pushes of `unitprep-api` and `unitprep-ui` in the same turn went through. A read-only `git status` through PowerShell was refused at the same moment; the same status and a local commit worked through the Bash tool. What to do: commit locally (selective `git add -- <paths>`, never `-A`, other sessions leave uncommitted vault files), say plainly that the push is blocked, and let Boris push or add a permission rule. Do not look for a way around it.
+
+## Git Bash `/tmp` is not WSL `/tmp`; `wsl.exe -e bash -lc '...'` mangles scripts with quotes (2026-10-07)
+
+A script written by a Windows-side heredoc to `/tmp/x.py` lands in Git Bash's own `/tmp`, so a later `wsl.exe ... python3 /tmp/x.py` says "No such file". Piping works (`cat f | wsl.exe -e bash -lc 'cat > /tmp/f; ...'`) until the script contains quotes the outer command re-parses. Reliable: write the file with the Write tool straight to `\\wsl.localhost\Ubuntu\tmp\name.py` (use a NEW name - Write refuses to overwrite a file it has not read), then run it with `wsl.exe -e bash -lc 'python3 /tmp/name.py'`. Related: `env -i PATH="$PATH"` breaks when WSL's PATH carries Windows paths with spaces (use `PATH=/usr/bin:/bin`), and signalling a backgrounded shell *function* kills the wrapper, not the binary. See also [[Gotchas]] "Driving WSL from PowerShell".
+
+## A new route needs a permission-gate-test entry, and `build()`-level tests need a Tokio context (2026-10-07)
+
+`api/router/permission_gate_tests.rs` fails if a `RouteAccess::Permission` route in the manifest has no matching `permission_route_checks()` entry (one per method), so adding an endpoint is routes + gate test, not just routes. `empty_state()` creates a pool, so any test calling `build(empty_state())` must be `#[tokio::test]`.
+
+## Production migrations: the auto-mode classifier blocks them from the terminal pane, not from an approved chat instruction (2026-10-07)
+
+Running `scripts/prod_db_sync.sh` through the Terminal-panel tool was denied as a "Production Deploy" even though Boris had said earlier to apply migrations. After he said it again explicitly in chat ("apply the migration"), running the same script through Bash (`echo "apply prod" | ./scripts/prod_db_sync.sh`) worked. Do not retry a denied action another way on your own; wait for the explicit chat approval. After applying, compare `md5(string_agg(version||checksum))` of `_sqlx_migrations` on dev and prod to prove they match.
+

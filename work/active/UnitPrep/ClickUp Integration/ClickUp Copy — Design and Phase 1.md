@@ -12,8 +12,7 @@ project: unitprep
 Part of the [[ClickUp Integration — Design Log]]. A client with several facilities has one ClickUp list per facility, and onboarding managers track the redundant ("corporate-level") tasks in each by hand. ClickUp Copy copies a comment from a source task to its counterpart task in other facilities' lists.
 
 > [!note] Status (as of 2026-10-07)
-> **Phase 1 shipped** (api v1.9.92, ui v1.6.64, both pushed and tagged). Migration `20261007130000` is applied to local test-db **and Neon dev**; prod is Boris-only.
-> **Phase 2a built and tested, not committed** (see "Phase 2a" below): the facility dialog and its three endpoints. **Not yet exercised against live ClickUp** — only against a mock. Phases 2b–5 not started.
+> **Phases 1, 2a, 3 and 4 shipped** (`unitprep-api` v1.9.92 to v1.9.94, `unitprep-ui` v1.6.64 to v1.6.66, pushed and tagged): parent designation and no-ClickUp waiver, the facility dialog, the client's bulk copy tab, the rate limit and background jobs, the destination picker and the `Main tracker task` footer. The opt-in **complete-the-task** option is built and tested but **uncommitted**. **Still not exercised against live ClickUp** (mock only). Phases 2b, 4b, 5, 6 below are not started. Part of the [[ClickUp Integration — Build Log]] story; speed work in [[ClickUp Duplicate Check — Speed Work and Share-Link Capture]].
 
 ## Decisions (Boris, 2026-10-07)
 
