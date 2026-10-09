@@ -8,6 +8,17 @@ tags:
 
 Things that have bitten before and will bite again.
 
+## HIGH IMPORTANCE, DEFERRED: dedup tool-run history stores ~1.9 MB per run, with no retention policy. Decide one BEFORE the cloud move
+
+> [!danger] Trigger: when UnitPrep is being readied to move to cloud hosting (or any metered database storage / backup / egress), settle tool-run retention FIRST
+> Today's decision (Boris, 2026-10-09): **keep everything**, because the current volume does not justify any policy. That is correct for now and is recorded here so it is a decision, not an oversight.
+
+**Fact (measured 2026-10-09):** every dedup check writes one `client_ops.tool_runs` row holding the encrypted source file (~272 KB at 2,400 rows) plus the encrypted kept records (~1.6 MB), **~1,872 KB per run**, and encrypted data does not compress. Rule of thumb: **1,000 runs is about 1.9 GB**, and it grows with facility size (rows). `auth.durable_sessions` adds a further live copy per session (~0.25 MB per run). Neon bills storage, and every backup, branch and the `prod_db_sync.sh` copy carries it too. Measured in [[Efficiency Refactor - Concurrent Load Results]].
+
+**Why it is easy to miss:** nothing fails and nothing is slow; it only shows up as a storage bill or a branch/backup that is suddenly large. Row count looks harmless (a few thousand rows).
+
+**How to apply (when the trigger fires):** first measure real volume with `SELECT count(*), pg_size_pretty(sum(coalesce(pg_column_size(source_bytes),0) + coalesce(pg_column_size(records_encrypted),0))) FROM client_ops.tool_runs;` on prod. Then pick one: (a) keep only the newest N runs per facility; (b) keep the summary row but null `records_encrypted` (and optionally `source_bytes`) after N days, which preserves history while dropping ~85% of the bytes; (c) leave it if the number is still small. Check that nothing reads old records first (the Onboarding Work tab's re-open / re-export paths use `open_records` and `open_source`). Related: the live-session copy has its own idle-expiry cleanup, so it is not the problem.
+
 ## A `.git` folder found inside a raw file-mirror backup may be empty
 
 A backup folder having a `.git` directory doesn't mean it has history -- a byte-for-byte file mirror can carry an empty `git init` skeleton along with everything else. Confirm with `find .git/objects -type f | wc -l` or `git fsck` before trusting it as a source of history to recover. Full incident and the rest of the migration steps in [[Laptop Migration]].
