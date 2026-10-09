@@ -13,6 +13,8 @@ project: unitprep
 
 **This will span many sessions.** Update the status table here and the [[Efficiency Refactor - Session Log]] at the END of every session (and `om` `record_work` if the MCP is available). A new session should be able to resume from this note alone.
 
+**Post-refactor follow-up (2026-10-09):** concurrent-load measurement of A4-A6, inline-vs-blocking A/B, per-run storage footprint, CI-allowlist gap and ClickUp playbook audit are in [[Efficiency Refactor - Concurrent Load Results]]. The new `concurrent_load_tests.rs` is uncommitted in `unitprep-api`.
+
 ## CURRENT STATE (2026-10-08, evening) - READ THIS FIRST
 
 **COMPLETE 2026-10-09: the refactor is finished, including the end-of-refactor tasks.** (1) **Prod DB migrations APPLIED 2026-10-09** with `scripts/prod_db_sync.sh` (`20261007130000`, `20261007140000`, `20261007150000`; all additive; 0 failed; `app_service` grants re-verified): prod and dev now have IDENTICAL migration state (110 migrations, same checksum hash `81c03ea9...`; `vendor_format` 14 -> 17 rows). (2) **The TOTP step-up prompt is built and pushed** (ui v1.6.91, `components/auth/StepUpPrompt.tsx` + a shell gate in `app/(app)/layout.tsx`): the long-open finding is closed. (3) Pushed and in sync at that point: `unitprep-api` v1.9.116, `unitprep-ui` v1.6.91. Anything below that says prod migrations are pending is history.
