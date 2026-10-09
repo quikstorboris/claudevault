@@ -37,7 +37,7 @@ Built 2026-10-01 from a full scan of `unitprep-api` (v1.9.55) and `unitprep-ui` 
 | **axum-extra** (cookies), **time**, **hex** | Auth plumbing | Session cookie handling; hex-encoded keys (survives shell/`.env` quoting that mangles base64 `+`/`=`). |
 | **thiserror / anyhow** | Error handling | Typed auth errors; ergonomic propagation. |
 | **serde / serde_json** | Serialization | JSON in/out of the API and JSONB columns. |
-| **ts-rs** | Backend-to-frontend contract | Generates TypeScript types from Rust structs.<br>• One source of truth for API shapes<br>• CI fails if generated types drift from the UI |
+| **ts-rs** | Backend-to-frontend contract | Generates TypeScript types from Rust structs.<br>• One source of truth for API shapes<br>• CI fails if generated types drift from the UI<br>• Features `uuid-impl` + `chrono-impl` enabled (2026-10-08, api v1.9.113): `Uuid` and chrono dates export as `string`<br>• `i64` ids need `#[ts(type = "number")]` (default is `bigint`); `BTreeMap` needs `#[ts(type = "Record<string, string>")]` |
 | **reqwest** (rustls) | Outbound HTTP | Process Street API; Dropbox API/OAuth2.<br>• TLS stack matches SQLx, no second OpenSSL tree |
 | **calamine** | File ingestion | Reads uploaded .xlsx/.xls exports from other vendors.<br>• Pure Rust, read-only |
 | **csv + encoding_rs** | File ingestion | CSV parse/write with legacy-encoding handling. |
