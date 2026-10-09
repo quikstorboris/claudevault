@@ -8,6 +8,14 @@ tags:
 
 Things that have bitten before and will bite again.
 
+## HIGH IMPORTANCE, DEFERRED: ClickUp's rate limiter, task cache and background-copy runner live inside one API process. Fix BEFORE running more than one instance
+
+> [!danger] Trigger: when work starts on cloud deployment (e.g. Fly.io), or on running more than one API instance for any reason
+> Recorded 2026-10-09 (Boris asked for it to be noted with exactly this trigger). Today there is one process, so it is correct.
+
+**Fact:** `clickup::rate_limit` (80 calls per 60 s per user, against ClickUp's ~100/min per token), `clickup::task_cache` and the background bulk-copy runner (`tokio::spawn`) are all in-process. With N machines each user effectively gets N x 80 calls/min against ClickUp's one limit, so copies start returning 429s that the limiter was meant to prevent; the task cache is per machine (stale after another machine writes); and a background job runs only on the machine that accepted it, so a deploy or restart cuts it (the `clickup_copy_jobs` row reports `interrupted`; the table itself is shared and correct).
+**Fix:** a shared limiter (Redis, already on the Fly.io plan, see [[Key Decisions]]); the cache can stay per-machine (it only costs speed) or move to the same store. **No durable job queue** (Boris, 2026-10-09): a cut job is accepted. Detail in [[ClickUp Copy — Design and Phase 1]].
+
 ## HIGH IMPORTANCE, DEFERRED: dedup tool-run history stores ~1.9 MB per run, with no retention policy. Decide one BEFORE the cloud move
 
 > [!danger] Trigger: when UnitPrep is being readied to move to cloud hosting (or any metered database storage / backup / egress), settle tool-run retention FIRST

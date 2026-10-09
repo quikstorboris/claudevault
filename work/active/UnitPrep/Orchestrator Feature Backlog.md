@@ -141,6 +141,8 @@ from.
   `role_changed`/`user_deactivated` prominent on the admin Users page. See
   [[Roles & Permissions — Design Discussion]].
 
+- **Settings screen for the ClickUp task steps** (added 2026-10-09). `integrations.clickup_task_steps` already holds, per step, the task-name phrases ("keywords for case look-up") and the comment wording for duplicate checks, Unit Groups ("CONFIGURE Unit Setup") and Template Tagger ("APPLY TAGS to Lease"); admins/developers can `UPDATE` it under RLS but there is no UI. Boris wants these configurable, not hard-coded. See [[ClickUp Copy — Design and Phase 1]].
+
 ## Tier 3 — trigger-gated, watch for the trigger rather than schedule
 
 - **Groups (client-scoped access)** — deferred in v1 as hypothetical
