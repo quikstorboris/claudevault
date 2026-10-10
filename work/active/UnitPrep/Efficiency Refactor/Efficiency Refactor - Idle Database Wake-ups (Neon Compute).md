@@ -11,6 +11,10 @@ project: unitprep
 
 Follow-up to [[Efficiency Refactor - Master Plan and Progress]] and [[Efficiency Refactor - Concurrent Load Results]]. Question asked 2026-10-09: "are we protecting Neon compute?" The refactor protected the **request path** (no per-request session write, no ping per acquire, batching, bounded fan-out). It had never audited the **idle** path.
 
+## Status (2026-10-09)
+
+**Shipped in `unitprep-api` v1.9.119** (fix commit `a9c7636`, bump `ab50c57`, pushed and tagged). No migration. It went out together with the ClickUp session's v1.9.118 (`7482063`, `4534313`, `2776aac`; migration `20261009120000`), which sat unpushed beneath it in the same checkout; I reviewed those commits first (migration round-trips down and up, 107 `_db_` tests and the full preflight green at HEAD, UI and API route names match). Dev Neon already had `20261009120000`; **prod Neon is one migration behind (110 vs 111) until Boris runs `scripts/prod_db_sync.sh`** (interactive, he types `apply prod`). The new behavior needs nothing in the database.
+
 ## Finding
 
 `DurableSessionStore::start_cleanup_task` (`core/src/durable_session_store.rs`) ran a `tokio::time::interval(60 s)` that issued a `DELETE ... WHERE kind = $1 AND last_accessed < ...` against `auth.durable_sessions`. There are five stores (Group Prep, dedup, tagger, registration ceremony, authentication ceremony), so **about five queries a minute, 24/7, as long as the server process is up.** Neon suspends compute after ~5 idle minutes (the default; whether prod has scale-to-zero enabled was NOT verified), so any timer under 5 minutes means compute-hours accrue for the whole month even with zero users.

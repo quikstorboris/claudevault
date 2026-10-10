@@ -13,7 +13,7 @@ project: unitprep
 
 **This will span many sessions.** Update the status table here and the [[Efficiency Refactor - Session Log]] at the END of every session (and `om` `record_work` if the MCP is available). A new session should be able to resume from this note alone.
 
-**Post-refactor follow-up (2026-10-09):** concurrent-load measurement of A4-A6, inline-vs-blocking A/B, per-run storage footprint, CI-allowlist gap and ClickUp playbook audit are in [[Efficiency Refactor - Concurrent Load Results]]. The new `concurrent_load_tests.rs` is uncommitted in `unitprep-api`.
+**Post-refactor follow-up (2026-10-09):** concurrent-load measurement of A4-A6, inline-vs-blocking A/B, per-run storage footprint, CI-allowlist gap and ClickUp playbook audit are in [[Efficiency Refactor - Concurrent Load Results]] (the benchmark `concurrent_load_tests.rs`, the CI `_db_` step and a flaky-test fix are committed and pushed in `unitprep-api`). Idle-path audit: five 60 s database sweep timers kept Neon compute awake 24/7; replaced by a scheduled sweep in `unitprep-api` v1.9.119, see [[Efficiency Refactor - Idle Database Wake-ups (Neon Compute)]].
 
 ## CURRENT STATE (2026-10-08, evening) - READ THIS FIRST
 
