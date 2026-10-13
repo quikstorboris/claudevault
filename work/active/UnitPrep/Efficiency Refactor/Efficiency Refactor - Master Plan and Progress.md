@@ -15,7 +15,7 @@ project: unitprep
 
 **Post-refactor follow-up (2026-10-09):** concurrent-load measurement of A4-A6, inline-vs-blocking A/B, per-run storage footprint, CI-allowlist gap and ClickUp playbook audit are in [[Efficiency Refactor - Concurrent Load Results]] (the benchmark `concurrent_load_tests.rs`, the CI `_db_` step and a flaky-test fix are committed and pushed in `unitprep-api`). Idle-path audit: five 60 s database sweep timers kept Neon compute awake 24/7; replaced by a scheduled sweep in `unitprep-api` v1.9.119, see [[Efficiency Refactor - Idle Database Wake-ups (Neon Compute)]].
 
-## CURRENT STATE (2026-10-08, evening) - READ THIS FIRST
+## CURRENT STATE (refactor COMPLETE 2026-10-09; updated 2026-10-13) - READ THIS FIRST
 
 **COMPLETE 2026-10-09: the refactor is finished, including the end-of-refactor tasks.** (1) **Prod DB migrations APPLIED 2026-10-09** with `scripts/prod_db_sync.sh` (`20261007130000`, `20261007140000`, `20261007150000`; all additive; 0 failed; `app_service` grants re-verified): prod and dev now have IDENTICAL migration state (110 migrations, same checksum hash `81c03ea9...`; `vendor_format` 14 -> 17 rows). (2) **The TOTP step-up prompt is built and pushed** (ui v1.6.91, `components/auth/StepUpPrompt.tsx` + a shell gate in `app/(app)/layout.tsx`): the long-open finding is closed. (3) Pushed and in sync at that point: `unitprep-api` v1.9.116, `unitprep-ui` v1.6.91. Anything below that says prod migrations are pending is history.
 
@@ -176,7 +176,7 @@ Legend: `[ ]` not started, `[~]` in progress, `[x]` done (note the version shipp
 | D4i | 16 | `DropboxClient` private `rpc` helper; orchestrator `schedule.rs`; `merchant_account_mapping` crypto split | M | A2 | [x] api v1.9.99 (2026-10-07) |
 | D5a | 17 | Shared `ConfigSource` + integration-settings skeleton in `src/integrations/` | M | - | [x] api v1.9.106 (2026-10-08): `ConfigSource` shared; generic settings skeleton deliberately NOT built |
 | D5b | 17 | AEAD **golden-vector tests** + missing negative tests + unify serial test group names | S | - | [x] api v1.9.105 (2026-10-08) |
-| D5c | 17 | **GATED** - shared private AEAD core with thin wrappers (only if all conditions met) | M | D5b | [-] recommend CLOSE "not worth it" (see log 2026-10-08); D5b is the safety net if ever wanted |
+| D5c | 17 | **GATED** - shared private AEAD core with thin wrappers (only if all conditions met) | M | D5b | [-] CLOSED 2026-10-13 as not worth it (see log 2026-10-08); D5b is the safety net if ever wanted |
 
 ### Phase E - Cleanup, dead code, hygiene
 | ID | Items | Chunk | Size | Dep | Status |
