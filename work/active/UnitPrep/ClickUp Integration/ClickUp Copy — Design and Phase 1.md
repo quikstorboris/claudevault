@@ -27,6 +27,7 @@ Boris: the Copy tab (and the facility dialog) must offer all the groups on the C
 | 2026-10-07 | v1.9.94 | v1.6.66 | Phases 3+4: client ClickUp Copy tab, rate limit, background jobs, facility picker, `Main tracker task` footer |
 | 2026-10-07 | v1.9.95 | v1.6.67 | Opt-in "Also mark each task complete" (`complete_tasks`, default off); api also carries the passkey-registration characterization tests and the `auth_register` module split (refactor D4g). No migration. |
 | 2026-10-09 | v1.9.117 | v1.6.92 | Every Onboarding Phase offered, in the list's own order |
+| 2026-10-13 | v1.9.120 | v1.6.94 | Copy tab takes any number of source tasks (`background` flag on bulk-copy); quinn-proto advisories fixed |
 | 2026-10-09 | v1.9.118 | v1.6.93 | Last Synced Project log (facility); Update ClickUp for Unit Groups and Template Tagger runs; task phrases and comment wording moved to data. **Migration `20261009120000`** |
 
 Migrations on Neon dev (applied 2026-10-07): `20261007130000` (parent + waiver), `20261007140000` (copy jobs). **Prod has neither** — `scripts/prod_db_status.sh` then `prod_db_sync.sh`, by Boris only, before the matching api release goes to prod. Phases 3+4 and the footer/picker work were committed together by a second session working in the same tree (`cadc230` api, `1916197` ui).
@@ -67,6 +68,14 @@ Migrations on Neon dev (applied 2026-10-07): `20261007130000` (parent + waiver),
 - Module and routes renamed: `clickup_duplicate_check` -> `clickup_run_update`, `clickup/duplicate-check-tasks|results` -> `clickup/run-tasks|run-results`; UI `ClickUpRunUpdatePanel`, `lib/clickupRunUpdate.ts`. Non-dedup runs are audited as `facility_clickup_run_posted` (dedup keeps its older event type so the history reads as one).
 - **Decided without asking (flip any):** Unit Groups and Template Tagger *also assign and complete* the task, exactly like a duplicate check, and say "Unit group results are here" / "Template tagger results are here" (no-file fallbacks "Unit groups complete." / "Template tagger complete."). They are data: change the row, not the code.
 - **To be configurable later (Boris, 2026-10-09):** the task-name phrases ("keywords for case look-up") and the comment wording should eventually be editable in a settings screen. Today they are database rows an admin/developer can `UPDATE` (RLS already allows it), with no UI. Do not hard-code any of it. Tracked in [[Orchestrator Feature Backlog]].
+
+## Several source tasks at once (shipped 2026-10-13, api v1.9.120 / ui v1.6.94)
+
+Boris: the client's Copy tab allowed one source task per copy; it should take any number. Done, with no reason found against it beyond cost:
+- **UI:** the picker is checkboxes (Select all / none per phase). Each chosen task is a card with its **own** comment (prefilled from that task's latest comment) and its own counterpart per facility; the facilities are chosen **once for all** the tasks. Task lookups run one task at a time (each reads every destination list).
+- **Requests:** one `bulk-copy` per task, sequentially, so each task keeps its comment and its `Main tracker task` footer (the API stays one-source-task-per-request). The whole selection is summed (comments x 3 calls, +2 when completing); over the ~50-call inline budget, every task is sent with the new **`background: true`** (one job each) and notification permission is asked first.
+- **Behaviour change:** a ticked facility with no counterpart for a task is now **skipped for that task** with an amber count, instead of blocking Confirm (with many tasks, one missing match would otherwise force unticking the facility for all).
+- Costs scale as tasks x facilities x 3 calls, so a big selection is minutes of paced background work, and the rate limiter (per process, see [[Gotchas]]) is what keeps it within ClickUp's limit.
 
 ## 4b — "Last Synced Project" log (shipped 2026-10-09)
 
