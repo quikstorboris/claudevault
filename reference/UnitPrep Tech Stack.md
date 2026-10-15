@@ -73,7 +73,8 @@ Built 2026-10-01 from a full scan of `unitprep-api` (v1.9.55) and `unitprep-ui` 
 | **Vitest 5 + jsdom** | Frontend unit tests | Fast, Vite-based, Jest-compatible. |
 | **React Testing Library + user-event** | Frontend component tests | Tests behaviour as a user sees it. |
 | **Playwright** (Chromium) | E2E | Browser flows with mocked API responses (`page.route`). |
-| **@vitest/coverage-v8, cargo-llvm-cov** | Coverage | Source-based coverage on both stacks (tarpaulin as optional cross-check). |
+| **@vitest/coverage-v8, cargo-llvm-cov** | Coverage | Source-based coverage on both stacks. `cargo-llvm-cov` 0.9.1 first installed 2026-10-14; `unitprep-api/scripts/coverage.sh` runs the default tests plus the DB-backed ignored tests against a throwaway `unitprep_cov` database and prints per-area numbers (`coverage_by_area.py`). A map of thin spots, not a target; see [[Test Audit 2026-10-14]]. |
+| **Real-document corpus** (`tagger-pipeline/tests/corpus/`) | Regression tests from real files | One folder per real document: `input.docx`, `patterns.json`, `expected.json`, `README.md`; re-bless with `UPDATE_CORPUS=1`. Rule: [[Real Documents Are the Spec]]. |
 | **Clippy (`-D warnings`) + rustfmt** | Backend lint | Warnings fail the build. |
 | **ESLint 9 (eslint-config-next) + `tsc --noEmit`** | Frontend lint | Type and lint gates. |
 | **cargo-audit** | Supply-chain security | RUSTSEC advisory scan; accepted ones documented in `.cargo/audit.toml`. |

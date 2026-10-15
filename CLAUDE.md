@@ -455,3 +455,4 @@ Each law exists because its absence caused real correction work in vaults runnin
 - Always check for and suggest connections between notes.
 - Every note must have a `description` field (~150 chars). Claude fills this automatically.
 - **Zero data loss**: when reorganizing, always use `git mv`. Never delete without explicit user confirmation.
+- **Real document for everything (Boris, 2026-10-14).** Every real document, export, payload or screenshot that teaches us how a tool behaves gets an exhaustive record from `templates/Real Document Record.md` AND a fixture-with-expected-output in the repo's test corpus. No space-saving, no session-prose substitute. Full rule, the two halves, and the PII boundary (redacted copies of anything holding personal data; never commit raw tenant data): [[Real Documents Are the Spec]].

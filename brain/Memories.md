@@ -15,6 +15,7 @@ Persistent context and knowledge retained across sessions. Each topic lives in i
 - [[CI Backlog]] — check ideas without a home yet in a tier of [[UnitPrep CI-CD Framework]] (the actual living CI/CD design — Tier 0 local preflight is built, Tiers 1-2 are designed and dormant)
 - [[Gotchas]] — things that have bitten before and will bite again
 - [[Collaboration Style]] — how Boris likes to work through hard technical decisions
+- [[Real Documents Are the Spec]] — standing rule (2026-10-14): every real document is a fixture with expected output plus an exhaustive vault record, no space-saving; PII boundary for the repos
 - [[People & Context]] — org structure, teams, review history, dynamics
 - [[North Star]] — living goals document, read at session start
 - [[Skills]] — custom slash commands and workflows
