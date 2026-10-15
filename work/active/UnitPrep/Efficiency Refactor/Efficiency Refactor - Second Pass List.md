@@ -72,3 +72,9 @@ In-memory session cache (revocation correctness), manifest-driven permission mid
 3. Everything else only when touching the area.
 
 Honest size: **two small releases**, not the 3-6 Grok guessed. The first pass already removed the systemic cost; most of Grok's Tier A was verifying work that is done.
+
+## Update 2026-10-15 (shipped + a new finding)
+
+Shipped: api v1.9.123 (XLSX cluster formats reused, one-pass CI DB tests, `check_schema_sql_fresh.sh` guard, ClickUp no-tx-across-HTTP rule documented, RUNBOOK wording) and ui v1.6.96 (workflow secret guard in both CI jobs). Done from the backlog: S2, S3, S4, S6, C-B, part of S5.
+
+**New finding: the Playwright suite is broken, not just un-wired.** After installing Chromium in WSL (needs `libnspr4`/`libnss3`/`libasound2t64` fetched with `apt-get download` + `dpkg -x` into `~/pwlibs/root`, and `LD_LIBRARY_PATH=~/pwlibs/root/usr/lib/x86_64-linux-gnu`, because there is no sudo), all 11 specs fail. Cause: the specs still visit `/clients/{id}/unit-groups/...` etc., but the app moved those routes under `/clients/{id}/facilities/{facilityId}/...` and clients now come from the API, not `sessionStorage` (`seedClient`). `session-expired` just renders Next's 404. The suite was never in CI, so it rotted silently. Do NOT add a tag e2e job until the specs are repaired. Repair = update URLs + seeding/mocks in `e2e/helpers.ts` and the 6 spec files, then add the job and a login/TOTP spec. Treat as its own chunk (S5b).
