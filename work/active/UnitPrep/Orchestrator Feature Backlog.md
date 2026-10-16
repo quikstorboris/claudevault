@@ -107,6 +107,17 @@ from.
   adopt the moment the tenant/unit schema is first written — see
   [[response-to-groks-tenant-piigdpr-implementation-suggestions|the Grok
   response]].
+- **Alert-recipient email as an admin setting** (Boris, 2026-10-16). The Grafana
+  Cloud panic alert emails whoever the `email-boris` contact point names
+  (set by hand to bmaksimov@quikstor.com "for today"). Make the recipient a
+  configurable field in the Orchestrator admin settings, in the same pattern
+  as the editable Dropbox/Process Street settings (DB row, admin-only via
+  `integrations.manage`). Design question to settle first: the app cannot
+  edit Grafana's contact point directly without a Grafana API token, so
+  either the setting drives the app's own alerting (the app emails on
+  ERROR/panic) or it syncs to Grafana through its API. A scheduled reminder
+  was set for 2026-10-16 16:00 PT. Context in
+  [[Session 2026-10-16 — Server Logging (JSON Files, Alloy, Grafana Cloud Loki)]].
 
 ## Tier 2 — needs one design decision first, then buildable
 

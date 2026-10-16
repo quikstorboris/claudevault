@@ -65,6 +65,15 @@ This became the first piece of the observability design; the cloud-move implicat
 - **The prod/cloud path is not built or tested** (and no prod exists). See [[UnitPrep Fly.io and Deployment Notes]] for the checklist.
 - Boris's running dev server on 8080 needs a restart to pick up the change (api-dev sets `LOG_DIR` automatically on container recreate).
 
+## Later the same day: dashboard, panic alert, and a real DB-connection finding
+
+**Built in Grafana (account `quikstorboris`, stack `joyfulpelican1551`):**
+- Dashboard **"UnitPrep API Logs"** (uid `unitprep-api-logs`): errors and panics (stat), log lines by level, requests by status code, max request latency, and an errors/warnings log panel. Source of truth is `unitprep-api/dev-tools/grafana/unitprep-api-logs.dashboard.json` (uncommitted at the time of writing) so it can be re-imported for prod.
+- Contact point **`email-boris`** (email, bmaksimov@quikstor.com, "for today" per Boris) and alert rule **"UnitPrep API panic"** (`sum(count_over_time({job="unitprep-api"} |= "panicked" [5m]))` above 0, every 1 minute, pending 0s, no-data = OK, folder GrafanaCloud, group `unitprep-api`). The Grafana default notification policy still routes to an empty contact point; this rule routes directly to `email-boris`.
+- **Only panics alert.** A handled `ERROR` (like the DB errors below) does not. An ERROR-level alert is recommended but not created. Boris wants the recipient to become an admin setting, see [[Orchestrator Feature Backlog]]; reminder scheduled for 2026-10-16 16:00 PT.
+
+**Real finding (a handled error, not a panic):** after the dev server sat idle about 10 minutes, the first four DB-touching requests all failed with `error communicating with database: expected to read 5 bytes, got 0 bytes at EOF` (login `POST /auth/login/begin` twice, `GET /health/whoami` twice), each returning 500 in about 1 ms. 1 ms means a pooled connection that was already dead was handed out. Four minutes later `/health/db` probes succeeded and the logs show `error from before_acquire` warnings: the idle-gated ping (`PING_IDLE_THRESHOLD`, 30 s, `src/db.rs`) **does** catch and replace dead connections, one per request. So the pool self-heals, but the first requests after a long idle can hit dead connections the ping did not catch. **Unverified hypothesis:** Neon (compute auto-suspend, see [[Efficiency Refactor - Idle Database Wake-ups (Neon Compute)]]) and its pooler drop idle connections, and the comment-only ping sqlx sends does not always reveal that through the pooler. Candidate fixes, none applied: ping with a real `SELECT 1`, an `idle_timeout` below Neon's suspend window, or one automatic retry on a connection-closed error. Needs a reproduction (idle more than 6 minutes, then probe). The log file and Grafana made this diagnosable in minutes, which is the logging work paying off.
+
 ## Related
 
 [[UnitPrep Fly.io and Deployment Notes]] · [[Production Readiness Checklist]] · [[UnitPrep Docker Standards]] · [[UnitPrep Tech Stack]] · [[Key Decisions]] · [[Gotchas]]
