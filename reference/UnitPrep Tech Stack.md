@@ -11,7 +11,7 @@ Built 2026-10-01 from a full scan of `unitprep-api` (v1.9.55) and `unitprep-ui` 
 
 **STANDING RULE: whenever a new tool, library, service or infrastructure piece is introduced to either repo, add a row here in the same session and bump "Last updated" below.** The rule is also recorded in both repos' `CLAUDE.md` and in Boris's auto-memory.
 
-**Last updated:** 2026-10-05 (gzip response compression via tower-http `compression-gzip`; shared in-house outbound-HTTP retry/timeout helper `integrations::http`, no new crate). Earlier: 2026-10-02 (ClickUp integration + per-user permission grants). Current as of `unitprep-api` v1.9.65 (pending) / `unitprep-ui` v1.6.55.
+**Last updated:** 2026-10-16 (server logging: JSON via tracing-subscriber `json`, `tracing-appender` rolling files, Grafana Alloy, Grafana Cloud Loki). Earlier: 2026-10-05 (gzip response compression via tower-http `compression-gzip`; shared in-house outbound-HTTP retry/timeout helper `integrations::http`, no new crate). Earlier: 2026-10-02 (ClickUp integration + per-user permission grants). Current as of `unitprep-api` v1.9.65 (pending) / `unitprep-ui` v1.6.55.
 
 **Caveats for the presenter**
 - There is **no OAuth2/OIDC** for sign-in. Auth is passkeys (WebAuthn) plus TOTP. The only OAuth is the *outbound* Dropbox OAuth2 flow.
@@ -49,7 +49,7 @@ Built 2026-10-01 from a full scan of `unitprep-api` (v1.9.55) and `unitprep-ui` 
 | **parking_lot** | Concurrency | In-memory caches (vendor-format registry).<br>• Locks don't get permanently poisoned by a panic |
 | **bincode** | Sessions | Compact binary serialization of durable tool sessions. |
 | **uuid** | IDs | v4 identifiers for sessions and records. |
-| **tracing / tracing-subscriber** | Observability | Structured logs, request spans, SQLx slow-query logging. |
+| **tracing / tracing-subscriber / tracing-appender** | Observability | Structured logs, request spans, SQLx slow-query logging.<br>• `json` feature: JSON log lines<br>• `tracing-appender`: daily-rotated JSON files, last 7 kept (`LOG_DIR`), added 2026-10-16 |
 | **dotenvy** | Config | `.env.local` in dev; real env vars when deployed. |
 
 ## Frontend
@@ -88,6 +88,8 @@ Built 2026-10-01 from a full scan of `unitprep-api` (v1.9.55) and `unitprep-ui` 
 |---|---|---|
 | **GitHub + GitHub Actions** (`checkout`, `setup-node`, `Swatinem/rust-cache`) | CI/CD | fmt, check, clippy, tests, DB tests against Postgres on every push; workflow-secrets guard. |
 | **Docker / Docker Compose** | Dev environment | Dev containers for API and UI plus ephemeral Postgres 18 test DB.<br>• Source bind-mounted, no rebuild per change<br>• Tests run as the real `app_service` role, not a superuser |
+| **Grafana Alloy** (`grafana/alloy:v1.10.0`) | Observability | Dev-only log shipper in the compose `logs` profile: tails `./logs` JSON files and pushes to Loki. Config `dev-tools/alloy/config.alloy`. Not used in a cloud deploy (stdout would be shipped instead). |
+| **Grafana Cloud (Loki)** | Observability | Hosted log search for server logs (Grafana Explore). Free trial ends 2026-10-30; permanent tier limits unverified. Write token in `.env.local` as `GRAFANA_API_KEY`. See [[UnitPrep Fly.io and Deployment Notes]]. |
 | **sqlx-cli 0.9** | Migrations | Applies migrations in CI. |
 | **Process Street API** | Integration | Read-only source for client/facility creation (Intake, Merchant, Contract workflows), replacing manual entry. |
 | **Dropbox API (OAuth2)** | Integration | File access for onboarding; credentials editable in an admin page, stored encrypted. |

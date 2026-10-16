@@ -18,6 +18,20 @@ Running list of decisions we deliberately deferred during development, that need
 
 **What to decide when we get there**: whether bank account/EIN should ever render in the UI at all (even masked), or whether "captured, never displayed in OO, exportable only via a deliberate separate flow" is the right posture for this specific data class.
 
+### Server logging for a real deployment (added 2026-10-16)
+**Decision deferred**: server logs are JSON files (7 days) shipped by a dev-only Alloy container to Grafana Cloud Loki; nothing is set up for a cloud host. Built in [[Session 2026-10-16 — Server Logging (JSON Files, Alloy, Grafana Cloud Loki)]].
+
+**Why this needs a real answer before shipping**: cloud hosts (Fly.io included) have ephemeral disks, so the log files would vanish on every deploy; the Alloy service and its hardcoded `env=dev` label and Loki credentials live in `docker-compose.yml`, which a cloud host does not run. Without a plan, production would have no stored logs, or prod logs would be mixed into dev's.
+
+**What to decide when we get there**: ship stdout (`LOG_FORMAT=json`, `LOG_DIR` unset) via the host's route to Loki (on Fly.io, probably `fly-log-shipper`, unverified), `env=prod` label, credentials as host secrets, retention on the Grafana side. Checklist in [[UnitPrep Fly.io and Deployment Notes]].
+
+### Grafana Cloud trial ends 2026-10-30 (added 2026-10-16)
+**Decision deferred**: the account is on a free trial; the permanent free tier's retention and volume limits were not checked.
+
+**Why this needs a real answer before shipping**: after the trial, logs may be kept for less time or capped, and the 7-day local files are the only other copy in dev.
+
+**What to decide when we get there**: check the Plan details page before the trial ends; decide whether the free tier is enough or whether to pay or switch sink.
+
 ## Format for future entries
 
 ```
