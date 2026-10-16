@@ -27,6 +27,18 @@ Things that have bitten before and will bite again.
 
 **How to apply (when the trigger fires):** first measure real volume with `SELECT count(*), pg_size_pretty(sum(coalesce(pg_column_size(source_bytes),0) + coalesce(pg_column_size(records_encrypted),0))) FROM client_ops.tool_runs;` on prod. Then pick one: (a) keep only the newest N runs per facility; (b) keep the summary row but null `records_encrypted` (and optionally `source_bytes`) after N days, which preserves history while dropping ~85% of the bytes; (c) leave it if the number is still small. Check that nothing reads old records first (the Onboarding Work tab's re-open / re-export paths use `open_records` and `open_source`). Related: the live-session copy has its own idle-expiry cleanup, so it is not the problem.
 
+## First requests after a long idle can hit a dead pooled connection: `expected to read 5 bytes, got 0 bytes at EOF` (HTTP 500 in ~1 ms)
+
+**Fact (2026-10-16):** after the dev server sat idle ~10 min, the first four DB requests (`/auth/login/begin` x2, `/health/whoami` x2) failed with that error. 1 ms means a dead connection was handed out, not a slow query. The laptop was in Modern Standby 12:31-12:37 PDT, and Neon compute auto-suspend is deliberate ([[Efficiency Refactor - Idle Database Wake-ups (Neon Compute)]]).
+
+**Investigated, not fully reproduced:** on a dev server idle 7-12 min (single connection and a 10-connection burst) every dead connection was caught by `before_acquire` (`error from before_acquire` WARN, one per request, ~0.65 s each, no 500). WSL's monotonic clock does NOT stall in standby (checked: uptime matches wall clock), so `idle_for` is not underestimated. The 500 window itself never recurred on demand. Probing several servers in parallel keeps the shared Neon compute awake and hides the problem; test one server alone.
+
+**Most likely cause, unproven:** sqlx 0.8's `PgConnection::ping()` is a bare protocol `Sync`; Neon's `-pooler` (PgBouncer) can answer that without a backend, so a connection whose backend died can pass the ping and fail on the first real statement.
+
+**Fix:** `src/db.rs` pings idle connections with a real `SELECT 1` (`ping_through_to_backend`), still only when idle >= 30 s. Test `the_idle_ping_discards_connections_whose_backend_was_killed` (`--ignored`, local test-db) guards that dead connections are discarded; it cannot reproduce the pooler-specific case (direct Postgres fails either ping). A dead connection that is trusted (idle < 30 s) can still fail one request: accepted, bounded cost.
+
+**How to apply:** if this error returns with no `before_acquire` warnings, look at the pooler path, not the pool settings. Do not reintroduce `conn.ping()`.
+
 ## A `.git` folder found inside a raw file-mirror backup may be empty
 
 A backup folder having a `.git` directory doesn't mean it has history -- a byte-for-byte file mirror can carry an empty `git init` skeleton along with everything else. Confirm with `find .git/objects -type f | wc -l` or `git fsck` before trusting it as a source of history to recover. Full incident and the rest of the migration steps in [[Laptop Migration]].
