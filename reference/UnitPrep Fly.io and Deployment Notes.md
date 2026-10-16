@@ -76,6 +76,10 @@ Built in [[Session 2026-10-16 — Server Logging (JSON Files, Alloy, Grafana Clo
 - Does anything in the UI or API need to know it is behind a proxy (cookie `Secure`, `X-Forwarded-*`, WebAuthn origin)? Not examined yet.
 - Secrets: how `.env.local` values map to host secrets, and which of them must differ between dev and prod.
 
+## Latency is round-trip bound: put the API next to the database (measured 2026-10-16)
+
+From Boris's laptop (WSL) to the Neon dev endpoint (`...-pooler.us-west-2.aws.neon.tech`, Oregon), a TCP connect takes about **50 ms**. A warm authenticated request makes roughly five sequential database round trips (session lookup, `BEGIN`, set the RLS claims, the data query, `COMMIT`), which matches the measured warm times: `/clients` median 288 ms, `/clients/filter-options` 400 ms, `/health/whoami` 276 ms, a trivial `/health/db` 318 ms (Loki, last 3 h). So the latency is mostly distance, not slow queries. **When the API is hosted in or near us-west-2, the same five round trips should cost a few milliseconds each**, an order of magnitude less. Consequences: do not spend effort shaving round trips now; **choose the host region next to the Neon region** (verify which Fly.io region is closest to us-west-2 at that time; not checked). Cold start after Neon auto-suspend adds about 1.5 to 2.5 s to the first request after idle and discards dead pooled connections one at a time; Boris decided on 2026-10-16 to **accept that** in dev (scale-to-zero is deliberate, see [[Efficiency Refactor - Idle Database Wake-ups (Neon Compute)]]). Revisit keep-awake (or a shorter pool `idle_timeout`) when going live. Evidence in [[Session 2026-10-16 — Server Logging (JSON Files, Alloy, Grafana Cloud Loki)]].
+
 ## Related
 
 [[Production Readiness Checklist]] · [[UnitPrep CI-CD Framework]] · [[UnitPrep Docker Standards]] · [[UnitPrep Tech Stack]] · [[UnitPrep Prod DB Sync Procedure]]
