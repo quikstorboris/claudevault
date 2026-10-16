@@ -661,3 +661,14 @@ The Alloy config promotes only `level` (plus `job`, `env`); `request_id`, paths,
 - **Explore and Drilldown pages are snapshots**, not live: a tab opened earlier keeps its old result. Refresh, set an auto-refresh interval, or use Explore's Live (this made Boris think logs had stopped at the last restart).
 - **Grafana's alert email is a fixed layout**: labels, annotations, values and the subject can be shaped; the HTML and a logo cannot. Put information into labels and annotations (a per-error query with `sum by (...)` and `label_format`), not into a hoped-for template. Values `A=..  C=..` are expression ids (A = the query result, C = the threshold); explain them in the description.
 Full detail: [[Grafana Cloud Setup and Objects]].
+
+## Efficiency second pass: WSL Chromium, worktrees, audit and release traps (2026-10-16)
+
+- **Playwright Chromium in WSL without sudo**: `npx playwright install chromium` works but the browser needs `libnspr4`, `libnss3`, `libasound2t64`. `playwright install-deps` needs sudo and hangs. `apt-get download` the three, `dpkg -x` into `~/pwlibs/root`, run with `LD_LIBRARY_PATH=$HOME/pwlibs/root/usr/lib/x86_64-linux-gnu`.
+- **A git worktree's `node_modules` must be real**: a symlink to the main checkout's breaks Turbopack/`next dev` (`find_package` failures). `cp -al ~/Development/unitprep-ui/node_modules node_modules` (hardlinks, instant).
+- **Windows `git` on a `\wsl.localhost\...` path flips file modes and line endings** (exec bits on `.githooks/*` and `scripts/*.sh` lost, files rewritten CRLF). Run git inside WSL only; repair with `chmod +x` and `git checkout -- <file>` from WSL git.
+- **Release beside another session's uncommitted work**: `git worktree add --detach <path> origin/main`, copy only your files, preflight there, `git push origin HEAD:main` + the tag; then in the main checkout `git reset --mixed <sha>` (working tree untouched) and `git checkout -- <file>` for files only you changed. The sibling-path checks (`check_ts_bindings.sh` reads `../unitprep-ui`; UI preflight reads `../unitprep-api`) look at the wrong copy from a worktree: pass the path explicitly.
+- **`cargo audit` can go red overnight** (zip RUSTSEC-2026-0367/0368/0369, 2026-10-09/10). Check reachability with a grep for the vulnerable API (here `extract`, never called), then add an exception to `.cargo/audit.toml` with the reasoning and a review date (this one: 2026-11-16, bump `zip = "2"` to 9).
+- **A wrong TOTP code is HTTP 400, not 401** on the real API; a 401 in a mock triggers the session-expiry bounce to `/login`.
+- **A Playwright suite that is not in CI rots completely** (all 11 specs had been failing for weeks). Keep it on the tag pipeline and keep one per-page API router that 404s and logs unmocked calls (`E2E_DEBUG=1`).
+Full detail: [[Efficiency Refactor - Second Pass Execution Record]].

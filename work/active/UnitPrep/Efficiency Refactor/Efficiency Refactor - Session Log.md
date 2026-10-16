@@ -173,3 +173,5 @@ Event-log satellite of [[Efficiency Refactor - Master Plan and Progress]] (moved
 **2026-10-13 - close-out.** Boris asked to close whatever was still open and sensible. Nothing in the plan was open: every row is `[x]` or `[-]`. D5c (the only "recommend close") is now formally CLOSED; the C1-C4, B1b, B5, B6 and D2d closures stand (each reopenable on request). Heading of the CURRENT STATE block retitled. Only non-refactor item left: prod migration `20261009120000` (ClickUp work) awaiting his explicit go-ahead.
 
 **2026-10-14 - Second-pass review.** Grok review at api 1.9.122 / ui 1.6.95 verified against code; most Tier A items already done or mis-stated. Corrected backlog in [[Efficiency Refactor - Second Pass List]].
+
+**2026-10-16 - Second pass closed.** api 1.9.123/1.9.132 and ui 1.6.96/1.6.98/1.6.101 shipped; remaining rows closed with measured decisions. Record: [[Efficiency Refactor - Second Pass Execution Record]].

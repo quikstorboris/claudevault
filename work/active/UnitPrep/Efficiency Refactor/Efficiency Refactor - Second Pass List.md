@@ -2,7 +2,7 @@
 date: 2026-10-14
 description: "Second-pass backlog after the efficiency refactor: Grok's 2026-10-14 list (api v1.9.122 / ui v1.6.95) checked against the real code, corrected, and re-ranked. Short, targeted; not another program."
 tags: [work-note, unitprep, efficiency, refactor, backlog]
-status: active
+status: completed
 quarter: Q4-2026
 project: unitprep
 ---
@@ -86,3 +86,7 @@ All 11 Playwright specs repaired (old routes, `sessionStorage` client seeding, `
 Local setup note (WSL, no sudo): Chromium needs `libnspr4`/`libnss3`/`libasound2t64`, fetched with `apt-get download` and `dpkg -x` into `~/pwlibs/root`; run with `LD_LIBRARY_PATH=~/pwlibs/root/usr/lib/x86_64-linux-gnu`. A git worktree needs a real (hardlinked, `cp -al`) `node_modules`, not a symlink: Turbopack cannot resolve through one.
 
 Still open from this list: S1 (optional ClickUp helper), B1 Tagger parse cache, B2 module splits, B5 hand-written TS types, B6 bundle measurement, C-A load numbers into RUNBOOK, C-C tool-run retention, C-D remote-DB pool sizing.
+
+## Update 2026-10-16: second pass CLOSED
+
+Every row finished or closed with a recorded decision; nothing from the backlog is open. Full detail, numbers, commands, gotchas and the remaining dated follow-ups: [[Efficiency Refactor - Second Pass Execution Record]]. Shipped: api 1.9.132 (ClickUp module splits, `DB_POOL_MAX_CONNECTIONS`, ts-rs types, RUNBOOK load + retention sections, `scripts/tool_runs_storage.sql`, `read_docx` timing test, zip advisory exception) and ui 1.6.101 (generated types, bundle measured). Closed as decisions with evidence: S1 (ClickUp fan-outs already bounded), B1 (parse is 0.5-9 ms, no cache), B3/B4 (no measured problem), C5 (squash deferred).
