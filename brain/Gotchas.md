@@ -632,3 +632,32 @@ When the ClickUp session and a refactor session both work in `~/Development/unit
 ## `docker compose logs` does not show a server started with `docker compose exec` (2026-10-16)
 
 The `api-dev` container's main process is the `cargo watch` test loop; the real server is started separately with `docker compose exec api-dev cargo run`. **Docker's log capture only sees the container's main process**, so the server's output goes to the terminal that ran `exec` and nowhere else. Anything that wants the server's logs by tailing Docker (a log shipper, `docker compose logs api-dev`) sees only the test watcher. **How to apply:** have the app write its logs to a bind-mounted file (`LOG_DIR`, see [[Session 2026-10-16 — Server Logging (JSON Files, Alloy, Grafana Cloud Loki)]]) and tail that. Related, from the same session: the Alloy service must get `GRAFANA_API_KEY` via `docker compose --env-file .env.local` interpolation, never `env_file:`, which would copy every secret in `.env.local` (the Neon URLs included) into that container. On a cloud host this gotcha disappears (one process, stdout), see [[UnitPrep Fly.io and Deployment Notes]].
+
+## Running WSL's `git` against the Windows vault checkout shows every file as modified (2026-10-16)
+
+`/mnt/c/Users/bmaksimov/my-vault` is a Windows checkout. `git status` run through `wsl.exe` on that path reports dozens of files as modified (file modes and line endings differ between the two gits); Windows git (Git Bash or PowerShell) shows the real 2-3 changed files. It looked like unexplained vault edits and nearly caused a blind commit. **How to apply:** for the vault use Windows git; use WSL git only for the real WSL checkouts (`~/Development/unitprep-api`, `unitprep-ui`). See [[Server Logging and Grafana - Index]].
+
+## `wsl.exe -e bash -lc '...'` quoting traps: write a script file instead (2026-10-16)
+
+Nested single quotes, Python heredocs and `\` line continuations inside that wrapper get mangled (a heredoc dropped a `\` continuation in a wrapper script and `bash -n` still passed; a `grep -c` for a carriage return written as a dollar sign plus a double-quoted backslash-r matched the letter r, not a CR (use `file script.sh`, which says "with CRLF line terminators" when there are any); a `bash -lc` string with embedded quotes simply failed to parse). **How to apply:** for anything beyond a one-liner, write the script into the session scratchpad with the Write tool and run it (`bash /mnt/c/.../scratchpad/x.sh`), and after editing a shell script run it, not just `bash -n`. Related: the exec-bit loss on UNC edits and the backtick entry above; [[WSL Execution Technique]].
+
+## Docker Compose evaluates `${VAR:?msg}` for the whole file, whatever the profile (2026-10-16)
+
+A required variable (`:?`) on a service in an unstarted profile still made **every** `docker compose` command without `--env-file` fail (`required variable ... is missing a value`), including `docker compose exec`. **How to apply:** use `${VAR:-}` for variables belonging to optional profiles and fail loudly at runtime instead; never `env_file:` a file holding unrelated secrets (pass single variables by interpolation). Found by Boris when `exec api-dev cargo run` broke; fixed in `6b2cb6d`. See [[Server Logging Design and Decisions]].
+
+## `docker compose logs` never shows a server started with `docker compose exec`; logs must go to a file (2026-10-16)
+
+(Companion to the entry above about the exec'd server's output.) The `api-dev` container's main process is the `cargo watch` test loop; Docker only captures the container's main process. So the shipper reads a bind-mounted file (`LOG_DIR`), not Docker's log stream. In the cloud (one process) this disappears: ship stdout.
+
+## Loki: promote only low-cardinality fields to labels; `level` as a label turns the JSON `level` into `level_extracted` (2026-10-16)
+
+The Alloy config promotes only `level` (plus `job`, `env`); `request_id`, paths, user IDs and messages stay in the JSON line and are read with `| json`. Promoting those to labels would explode Loki's index. Because `level` is a stream label, a `| json` stage exposes the JSON field as `level_extracted`: cosmetic, `{level="ERROR"}` and `| json | level_extracted=...` both work. See [[Grafana Cloud Setup and Objects]].
+
+## Grafana Cloud automation through the Chrome tools: what works and what does not (2026-10-16)
+
+- `form_input` turns a JSON-looking string into an object (the box shows `[object Object]`); `file_upload` refuses files the session may not read (the scratchpad). **Set a dashboard import textarea through the page's own JavaScript** (native `HTMLTextAreaElement` value setter plus an `input` event), then Load -> Import (Overwrite). Build backticks with `String.fromCharCode(96)` or embed the JSON in a single-quoted string.
+- **Prefill a new alert rule with `/alerting/new/alerting?defaults=<url-encoded JSON>`** (queries, condition, annotations); typing into the Monaco query editor corrupts text (auto-closed quotes/braces). Folder, evaluation group, pending period and contact point are still picked in the form; dropdown options render after the click, so screenshot between clicks (click-then-click batches race).
+- A contact point's edit URL uses a base64 id; use the Edit link on `/alerting/notifications`.
+- **Explore and Drilldown pages are snapshots**, not live: a tab opened earlier keeps its old result. Refresh, set an auto-refresh interval, or use Explore's Live (this made Boris think logs had stopped at the last restart).
+- **Grafana's alert email is a fixed layout**: labels, annotations, values and the subject can be shaped; the HTML and a logo cannot. Put information into labels and annotations (a per-error query with `sum by (...)` and `label_format`), not into a hoped-for template. Values `A=..  C=..` are expression ids (A = the query result, C = the threshold); explain them in the description.
+Full detail: [[Grafana Cloud Setup and Objects]].

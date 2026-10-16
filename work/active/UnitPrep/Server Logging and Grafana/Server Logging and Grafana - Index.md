@@ -1,0 +1,64 @@
+---
+date: 2026-10-16
+description: "Index and status of the server logging / Grafana workstream for unitprep-api (started 2026-10-16): what exists, where every detail is recorded, how to resume, open items and everything still unverified."
+project: UnitPrep
+quarter: Q4-2026
+status: active
+tags:
+  - work-note
+  - index
+---
+
+# Server logging and Grafana: index
+
+**What this is:** `unitprep-api` now writes structured JSON logs to rotated files, an Alloy container ships them to Grafana Cloud Loki, and there is a dashboard, alert rules, a CLI and an MCP server to read them. Built on 2026-10-16 in one long session ("Part 1"); Sentry and log correlation were added the same afternoon by another session ("Part 2"). This folder is the exhaustive record of Part 1.
+
+## The notes
+
+| Note | What is in it |
+|---|---|
+| [[Session 2026-10-16 — Server Logging (JSON Files, Alloy, Grafana Cloud Loki)]] | The short summary note written during the session (kept as the quick read). |
+| [[Server Logging Design and Decisions]] | How it works, the JSON shape, every decision with its reason, alternatives rejected, forward-looking cloud constraints. |
+| [[Grafana Cloud Setup and Objects]] | Account/stack/datasource ids, token inventory (no values), the dashboard and its 17 panels, alert rules, contact point, Grafana UI facts. |
+| [[Reading Logs - Tools and Recipes]] | Every way to read logs; what was installed (logcli 3.7.8, mcp-grafana 2.0.2) and how it was verified; LogQL recipes. |
+| [[Findings - DB Connection Drops, Cold Starts and Latency]] | Evidence: 500s after idle, the `SELECT 1` fix, the 2.3 s cold start, the ~50 ms round-trip arithmetic, per-route latency table. |
+| [[Release 1.9.129 and 1.6.99 - Company Page Editing Review Record]] | The push of outstanding API commits, the dependent uncommitted front-end work, the backend review, commits/tags/pushes. |
+| [[Build Timeline 2026-10-16 (Part 1)]] | Chronology of every step, approvals, blocks and slips. |
+| [[Questions and Answers 2026-10-16 (Part 1)]] | Every question Boris asked and the substance of each answer. |
+
+Outside this folder: [[Session 2026-10-16 (Part 2) — Sentry Setup, Log Correlation, Tools Dashboard]] and [[Observability Plan and Open Tasks (Sentry + Grafana)]] (the other session's record and the living open-task list, **that list is the one to update**); the cloud hub [[UnitPrep Fly.io and Deployment Notes]]; [[Production Readiness Checklist]]; [[Orchestrator Feature Backlog]] (alert email as an admin setting); [[Gotchas]] and [[Key Decisions]] (entries dated 2026-10-16); [[UnitPrep Tech Stack]] (rows for tracing-appender, Alloy, Grafana Cloud, logcli, mcp-grafana).
+
+## State at ~16:30 PT, 2026-10-16
+
+- `unitprep-api`: logging shipped in **1.9.129** (`v1.9.129`), Sentry in 1.9.130, log-correlation/env label/tools dashboard in 1.9.131; docs commit `3db7be1`. `unitprep-ui`: `v1.6.99` (company page editing), `v1.6.100` (Sentry). All pushed. Part 1's last vault commit `767222a` is pushed; Part 2's two vault notes and this folder's new notes were **uncommitted** when written.
+- Grafana: dashboard "UnitPrep API Logs" (uid `unitprep-api-logs`), alert rules "UnitPrep API errors" (`bg1fr6erxfthca`) and "UnitPrep API panic" (`fg1frrc3623gga`) **still exist and evaluate** (normal, ok at 16:19 PT) although Part 2 declared them retired in favour of Sentry; contact point `email-boris`.
+- Read paths verified working at 16:19 PT: `scripts/logcli.sh` and the `grafana` MCP server.
+- Boris's dev server needed a restart to pick up the pool fix, ClickUp logging and the 1.9.131 changes; whether he did after 1.9.131 is not recorded here.
+
+## How to resume
+
+- Look at logs: files first (`unitprep-api/logs/*.log`), then `scripts/logcli.sh`, then the MCP server in a session started in `unitprep-api`, then Chrome ([[Reading Logs - Tools and Recipes]]).
+- Re-run the shipper: `docker compose --env-file .env.local --profile dev --profile logs up -d`.
+- Change the dashboard: edit `dev-tools/grafana/unitprep-api-logs.dashboard.json` and re-import (Import (Overwrite)), see [[Grafana Cloud Setup and Objects]] for the working method.
+- Never paste a token into chat or the vault; names and scopes only.
+
+## Open items (Part 1's view; the living list is in the Observability Plan note)
+
+- [ ] **Pause or delete the two Grafana email rules** (Sentry now owns error emails), or decide to keep them; otherwise errors email twice.
+- [ ] **Alert email as an admin setting** ([[Orchestrator Feature Backlog]], a 16:00 PT reminder fired 2026-10-16). Design question: the app cannot edit Grafana's contact point without a write token, so either the app does its own alerting or syncs through Grafana's API; a branded email needs the app to send mail itself.
+- [ ] **Grafana trial ends 2026-10-30**; verify the permanent free-tier limits ([[Production Readiness Checklist]]).
+- [ ] Watch the dashboard's "Database connection errors" panel after long idles to confirm the `SELECT 1` ping removed the 500s ([[Findings - DB Connection Drops, Cold Starts and Latency]]).
+- [ ] The panic alert has **never been seen firing** (there have been no panics).
+- [ ] Delete the read-scoped token that was pasted into chat (policy `stack-1878563-hl-read`), unless already done: never confirmed.
+- [ ] The Part 2 note reported one "invalid token" answer from the Loki read token; re-tests passed; unexplained.
+- [ ] Gaps in the shipped company-edit code (no real-staff DB test, PII in audit before/after, no field length limits): [[Release 1.9.129 and 1.6.99 - Company Page Editing Review Record]].
+- [ ] At the cloud move: stdout JSON, `LOG_DIR` unset, `env=prod`, host region next to Neon us-west-2, decide keep-awake vs cold start ([[UnitPrep Fly.io and Deployment Notes]]).
+- [ ] GitHub Actions results for the `v1.9.129` and `v1.6.99` tag runs were never looked at by Part 1.
+
+## Things recorded here that are unverified (do not treat as fact)
+
+Fly.io specifics (`fly-log-shipper`, ephemeral disks, `fly logs` buffer, which region is nearest Neon us-west-2); Grafana free-tier limits and retention; whether `alerting_manage_routing` is read-only under `--disable-write`; the exact five-round-trip count per request (read from code, not traced); the cause of the idle 500s (hypothesis: a pooler answers a bare `Sync` ping); whether the alert test email rendered as intended (Grafana confirmed it was sent, nobody looked at it); `grafanactl`/Terraform/Foundation SDK details.
+
+## Related
+
+`work/Index.md` (the work index) · [[Key Decisions]] · [[Gotchas]]

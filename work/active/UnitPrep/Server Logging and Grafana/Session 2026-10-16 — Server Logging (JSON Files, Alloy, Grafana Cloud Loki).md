@@ -94,6 +94,10 @@ Boris asked to push everything outstanding. The API's logging, ClickUp-logging, 
 
 **Alert email made informative (afternoon, after Boris pasted a bare-bones alert email):** the original error alert's query returned a single count, so the email showed only `A=2 C=1` and the generic summary. Replaced it with a per-error query (`sum by (target, fields_message, span_method, span_path, err)`) so each distinct error is its own instance, with templated `summary`/`description`/`runbook_url`/dashboard-panel link annotations, and set a custom contact-point subject. Verified the query on real data with `logcli` and sent one Grafana test notification to Boris's address (delivery confirmed by Grafana, not by seeing the email). Definitions recorded in `unitprep-api/docs/LOGS.md`. **Panic alert converted the same way** (per-panic instance with `panic_info`, module, request, description, dashboard link; query validated with `logcli` and the label template checked on real error lines; never seen firing, there have been no panics). **Not done:** a logo is not possible in Grafana's fixed alert-email layout (would need our own sender, see the backlog item about alerting driven from the app).
 
+## The full record
+
+This note was the running summary written during the session. The exhaustive record now lives beside it: start at [[Server Logging and Grafana - Index]] (design, Grafana objects, reading tools, DB findings, release review, timeline, every question and answer). Where this note and those differ, the folder's notes are more detailed and were checked later.
+
 ## Related
 
 [[UnitPrep Fly.io and Deployment Notes]] · [[Production Readiness Checklist]] · [[UnitPrep Docker Standards]] · [[UnitPrep Tech Stack]] · [[Key Decisions]] · [[Gotchas]]
