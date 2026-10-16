@@ -11,7 +11,7 @@ Built 2026-10-01 from a full scan of `unitprep-api` (v1.9.55) and `unitprep-ui` 
 
 **STANDING RULE: whenever a new tool, library, service or infrastructure piece is introduced to either repo, add a row here in the same session and bump "Last updated" below.** The rule is also recorded in both repos' `CLAUDE.md` and in Boris's auto-memory.
 
-**Last updated:** 2026-10-16 (server logging: JSON via tracing-subscriber `json`, `tracing-appender` rolling files, Grafana Alloy, Grafana Cloud Loki). Earlier: 2026-10-05 (gzip response compression via tower-http `compression-gzip`; shared in-house outbound-HTTP retry/timeout helper `integrations::http`, no new crate). Earlier: 2026-10-02 (ClickUp integration + per-user permission grants). Current as of `unitprep-api` v1.9.65 (pending) / `unitprep-ui` v1.6.55.
+**Last updated:** 2026-10-16 (log-reading tools: `logcli`, `mcp-grafana`; server logging: JSON via tracing-subscriber `json`, `tracing-appender` rolling files, Grafana Alloy, Grafana Cloud Loki). Earlier: 2026-10-05 (gzip response compression via tower-http `compression-gzip`; shared in-house outbound-HTTP retry/timeout helper `integrations::http`, no new crate). Earlier: 2026-10-02 (ClickUp integration + per-user permission grants). Current as of `unitprep-api` v1.9.65 (pending) / `unitprep-ui` v1.6.55.
 
 **Caveats for the presenter**
 - There is **no OAuth2/OIDC** for sign-in. Auth is passkeys (WebAuthn) plus TOTP. The only OAuth is the *outbound* Dropbox OAuth2 flow.
@@ -90,6 +90,8 @@ Built 2026-10-01 from a full scan of `unitprep-api` (v1.9.55) and `unitprep-ui` 
 | **Docker / Docker Compose** | Dev environment | Dev containers for API and UI plus ephemeral Postgres 18 test DB.<br>• Source bind-mounted, no rebuild per change<br>• Tests run as the real `app_service` role, not a superuser |
 | **Grafana Alloy** (`grafana/alloy:v1.10.0`) | Observability | Dev-only log shipper in the compose `logs` profile: tails `./logs` JSON files and pushes to Loki. Config `dev-tools/alloy/config.alloy`. Not used in a cloud deploy (stdout would be shipped instead). |
 | **Grafana Cloud (Loki)** | Observability | Hosted log search for server logs (Grafana Explore). Free trial ends 2026-10-30; permanent tier limits unverified. Write token in `.env.local` as `GRAFANA_API_KEY`. See [[UnitPrep Fly.io and Deployment Notes]]. |
+| **logcli** (Loki CLI, v3.7.8) | Observability | Terminal queries against Grafana Cloud Loki via `unitprep-api/scripts/logcli.sh`; installed at `~/.local/bin/logcli`. Needs a read-only token (`GRAFANA_LOGS_READ_TOKEN`). |
+| **mcp-grafana** (Grafana's MCP server, v2.0.2) | Observability / tooling | Lets a Claude Code session in `unitprep-api` query Loki, dashboards and alert rules without a browser. Registered in the repo-local `.mcp.json` as `grafana`, started by `scripts/grafana-mcp.sh`, read-only, usage statistics off. Needs `GRAFANA_SERVICE_ACCOUNT_TOKEN` (Viewer). |
 | **sqlx-cli 0.9** | Migrations | Applies migrations in CI. |
 | **Process Street API** | Integration | Read-only source for client/facility creation (Intake, Merchant, Contract workflows), replacing manual entry. |
 | **Dropbox API (OAuth2)** | Integration | File access for onboarding; credentials editable in an admin page, stored encrypted. |
