@@ -32,6 +32,13 @@ Running list of decisions we deliberately deferred during development, that need
 
 **What to decide when we get there**: check the Plan details page before the trial ends; decide whether the free tier is enough or whether to pay or switch sink.
 
+### Sentry and log alerting for a real deployment (added 2026-10-16)
+**Decision deferred**: Sentry is wired into both repos and emails Boris for new or regressed issues and error spikes, but it treats dev and prod alike and several pieces are dev-only. Full list in [[Observability Plan and Open Tasks (Sentry + Grafana)]].
+
+**Why this needs a real answer before shipping**: dev errors would email like prod errors; UI stack traces are unreadable without source maps; Sentry cannot link an issue to a commit; the "no logs" alert that would catch a dead prod server is deliberately off until there is a live host.
+
+**What to decide when we get there**: restrict the email rules to `environment:production`; set the `*_ENVIRONMENT` env vars and `LOG_ENV=prod`; give the UI build a `SENTRY_AUTH_TOKEN`; connect GitHub in Sentry; add the no-logs alert; pick trace sampling (about 0.1); re-tune the 5xx and p95 thresholds.
+
 ## Format for future entries
 
 ```

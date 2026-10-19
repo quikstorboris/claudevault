@@ -11,7 +11,7 @@ Built 2026-10-01 from a full scan of `unitprep-api` (v1.9.55) and `unitprep-ui` 
 
 **STANDING RULE: whenever a new tool, library, service or infrastructure piece is introduced to either repo, add a row here in the same session and bump "Last updated" below.** The rule is also recorded in both repos' `CLAUDE.md` and in Boris's auto-memory.
 
-**Last updated:** 2026-10-16 (log-reading tools: `logcli`, `mcp-grafana`; server logging: JSON via tracing-subscriber `json`, `tracing-appender` rolling files, Grafana Alloy, Grafana Cloud Loki). Earlier: 2026-10-05 (gzip response compression via tower-http `compression-gzip`; shared in-house outbound-HTTP retry/timeout helper `integrations::http`, no new crate). Earlier: 2026-10-02 (ClickUp integration + per-user permission grants). Current as of `unitprep-api` v1.9.65 (pending) / `unitprep-ui` v1.6.55.
+**Last updated:** 2026-10-16 (Sentry error reporting: `sentry` crate, `@sentry/nextjs`, Sentry cloud + CLI; api v1.9.130 / ui v1.6.100). Earlier: 2026-10-16 (log-reading tools: `logcli`, `mcp-grafana`; server logging: JSON via tracing-subscriber `json`, `tracing-appender` rolling files, Grafana Alloy, Grafana Cloud Loki). Earlier: 2026-10-05 (gzip response compression via tower-http `compression-gzip`; shared in-house outbound-HTTP retry/timeout helper `integrations::http`, no new crate). Earlier: 2026-10-02 (ClickUp integration + per-user permission grants). Current as of `unitprep-api` v1.9.65 (pending) / `unitprep-ui` v1.6.55.
 
 **Caveats for the presenter**
 - There is **no OAuth2/OIDC** for sign-in. Auth is passkeys (WebAuthn) plus TOTP. The only OAuth is the *outbound* Dropbox OAuth2 flow.
@@ -50,6 +50,7 @@ Built 2026-10-01 from a full scan of `unitprep-api` (v1.9.55) and `unitprep-ui` 
 | **bincode** | Sessions | Compact binary serialization of durable tool sessions. |
 | **uuid** | IDs | v4 identifiers for sessions and records. |
 | **tracing / tracing-subscriber / tracing-appender** | Observability | Structured logs, request spans, SQLx slow-query logging.<br>• `json` feature: JSON log lines<br>• `tracing-appender`: daily-rotated JSON files, last 7 kept (`LOG_DIR`), added 2026-10-16 |
+| **sentry** (Rust SDK 0.49, rustls transport; features `panic`, `tracing`, `tower`, `tower-http`) | Observability: error reporting | Sends panics (with stack traces) and every `tracing::error!` to Sentry project `orchestrator`; WARN/INFO become breadcrumbs; per-request scope via tower layers. Added 2026-10-16, api v1.9.130.<br>• Off unless `SENTRY_DSN` is set<br>• `send_default_pii` off; `before_send` strips request bodies, cookies, query strings, credential headers<br>• Releases tagged `unitprep-api@<version>`. Code: `src/startup/sentry.rs` |
 | **dotenvy** | Config | `.env.local` in dev; real env vars when deployed. |
 
 ## Frontend
@@ -63,6 +64,7 @@ Built 2026-10-01 from a full scan of `unitprep-api` (v1.9.55) and `unitprep-ui` 
 | **qrcode** | Auth UX | Renders TOTP enrolment QR from the `otpauth://` URI in the browser. |
 | **fflate** | Client-side files | In-browser ZIP handling (e.g. peeking XLSX headers pre-upload).<br>• Tiny, fast, zero dependencies |
 | **Node 24** (`.nvmrc`) | Runtime | Pinned in `.nvmrc` and the Docker image. |
+| **@sentry/nextjs** (11.x) | Observability: error reporting | Browser, server and edge errors plus both error boundaries go to Sentry project `orchestrator-ui`. Added 2026-10-16, ui v1.6.100.<br>• Off unless `NEXT_PUBLIC_SENTRY_DSN` is set; Session Replay not enabled<br>• `lib/sentryOptions.ts` scrubs bodies, cookies, query strings and the `/invites/<token>` path segment<br>• Source-map upload only when `SENTRY_AUTH_TOKEN` is set at build time |
 
 ## Testing, quality and security tooling
 
@@ -92,6 +94,8 @@ Built 2026-10-01 from a full scan of `unitprep-api` (v1.9.55) and `unitprep-ui` 
 | **Grafana Cloud (Loki)** | Observability | Hosted log search for server logs (Grafana Explore). Free trial ends 2026-10-30; permanent tier limits unverified. Write token in `.env.local` as `GRAFANA_API_KEY`. See [[UnitPrep Fly.io and Deployment Notes]]. |
 | **logcli** (Loki CLI, v3.7.8) | Observability | Terminal queries against Grafana Cloud Loki via `unitprep-api/scripts/logcli.sh`; installed at `~/.local/bin/logcli`. Needs a read-only token (`GRAFANA_LOGS_READ_TOKEN`). |
 | **mcp-grafana** (Grafana's MCP server, v2.0.2) | Observability / tooling | Lets a Claude Code session in `unitprep-api` query Loki, dashboards and alert rules without a browser. Registered in the repo-local `.mcp.json` as `grafana`, started by `scripts/grafana-mcp.sh`, read-only, usage statistics off. Needs `GRAFANA_SERVICE_ACCOUNT_TOKEN` (Viewer). |
+| **Sentry** (sentry.io, org `quikstor-wf`) | Observability: error tracking | Hosted issue tracking and alerting for both apps: projects `orchestrator` (Rust API) and `orchestrator-ui` (Next.js). DSNs are public ingest keys kept in each repo's `.env.local`; set `SENTRY_ENVIRONMENT`/`NEXT_PUBLIC_SENTRY_ENVIRONMENT` to `production` on a deployed host. Alert rules and Slack/email routing not yet configured. |
+| **Sentry CLI** (`sentry` 0.47, `~/.local/bin/sentry`) | Observability / tooling | Authenticated CLI (OAuth, auto-refresh) used to create projects and read issues from a terminal or Claude Code session (`sentry issue list quikstor-wf/orchestrator`). Login expires 2026-11-15 unless refreshed. |
 | **sqlx-cli 0.9** | Migrations | Applies migrations in CI. |
 | **Process Street API** | Integration | Read-only source for client/facility creation (Intake, Merchant, Contract workflows), replacing manual entry. |
 | **Dropbox API (OAuth2)** | Integration | File access for onboarding; credentials editable in an admin page, stored encrypted. |
