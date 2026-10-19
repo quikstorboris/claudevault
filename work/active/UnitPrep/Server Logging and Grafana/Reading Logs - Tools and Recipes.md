@@ -63,6 +63,11 @@ sum by (target, fields_message, span_method, span_path, err) (count_over_time({j
 - **Marker-request technique** to prove the pipeline end to end: `curl localhost:8080/grafana-live-check-<epoch>` (a harmless 404), then search Grafana for that string. It showed up about 10 ms after the file timestamp. (That 404 line, `GET /grafana-live-check-1792181828`, is now permanently in the dev logs.)
 - A throwaway test server can run beside the user's on a spare port: `PORT=8081 LOG_DIR=./logs ./target/debug/unitprep` (never stop Boris's own server on 8080).
 
+## Reading logs correctly: quiet is not broken (learned 2026-10-19)
+
+- The server logs one line per request plus a few background jobs, so an idle server writes almost nothing (66, 15 and 16 lines on the three days after the build day). A silent Grafana tab can mean "nothing happened", "the view is stale" or "the default window is too short" (Explore and Drilldown default to 1 hour, the dashboard to 6). **Before concluding the pipeline is broken**, compare the newest line in `./logs/*.log` with the newest line in Loki (`scripts/logcli.sh query '{job="unitprep-api"}' --since=192h --limit=5000 -o raw`, take the maximum timestamp) and read `docker compose logs alloy`.
+- **Sentry from the terminal**: the Sentry CLI is installed in WSL and logged in (see [[Sentry and Grafana Access for Claude]]). `sentry issue list quikstor-wf/orchestrator` shows only **unresolved** issues by default; add `--query "is:resolved"` to see the rest.
+
 ## Other tools Grafana offers (answer given to Boris; versions and some details are **recalled, not verified**)
 
 - **`logcli`** (installed), **Loki HTTP API** (what logcli wraps), **`mcp-grafana`** (installed).

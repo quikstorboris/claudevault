@@ -672,3 +672,19 @@ Full detail: [[Grafana Cloud Setup and Objects]].
 - **A wrong TOTP code is HTTP 400, not 401** on the real API; a 401 in a mock triggers the session-expiry bounce to `/login`.
 - **A Playwright suite that is not in CI rots completely** (all 11 specs had been failing for weeks). Keep it on the tag pipeline and keep one per-page API router that 404s and logs unmocked calls (`E2E_DEBUG=1`).
 Full detail: [[Efficiency Refactor - Second Pass Execution Record]].
+
+## `sentry issue list` shows only UNRESOLVED issues by default: "No issues found" does not mean Sentry is empty (2026-10-19)
+
+The Sentry CLI's `issue list` defaults to unresolved issues (and to the last 90 days; `--period` is irrelevant to this). Both Orchestrator projects showed "No issues found" while holding five **resolved** test issues. **How to apply:** add `--query "is:resolved"` (also try `is:ignored`, `is:archived`), `--fresh` to skip the cache, `--json --fields ...` for exact titles and first/last-seen times. See [[Sentry and Grafana Access for Claude]].
+
+## An idle server writes almost no logs: "logging stopped" usually means "nothing happened" or "the Grafana view is stale" (2026-10-19)
+
+After the build day the API logged 66, 15 and 16 lines per day (the nightly 03:00 PT Process Street sync plus a few warnings) and no request lines at all, because nobody used it. Grafana's Explore and Drilldown default to the last hour and the dashboard to six, and those pages do not auto-refresh. **How to apply:** before suspecting the pipeline, compare the newest line in `unitprep-api/logs/*.log` with the newest line in Loki (`logcli`, maximum timestamp) and read `docker compose logs alloy`. Evidence: [[Check-in 2026-10-19 - Weekend Quiet, Pool Warning, Sentry Empty]].
+
+## `WARN error from 'before_acquire' ... expected to read 5 bytes, got 0 bytes at EOF` with no ERROR next to it is the pool working, not a failure (2026-10-19)
+
+It means the pool tested an idle connection (a real `SELECT 1`), found it dead because Neon had suspended its compute, discarded it and opened a new one. Several at the same instant are several dead connections found together. In Boris's server they recur at exactly 4-hour offsets from startup (a background job), e.g. 2026-10-19T10:14:24Z = 36 h after the 2026-10-16T22:14:24Z start. Only worry if the same message appears as an ERROR / HTTP 500 **without** a `before_acquire` warning before it (that was the pre-fix pattern). See [[Findings - DB Connection Drops, Cold Starts and Latency]].
+
+## After another session pushes, the local checkouts (and the running server) can be behind origin without anyone noticing (2026-10-19)
+
+On Monday `git fetch` showed `unitprep-api` behind `origin/main` by 3 commits and `unitprep-ui` by 1 (api 1.9.132 and ui 1.6.101 had been pushed Friday afternoon from another session); the server and the `cargo watch` container were still running 1.9.131 / 1.6.100. **How to apply:** `git fetch -q origin --tags && git log HEAD..origin/main --oneline` before assuming the checkout matches GitHub, then `git pull --ff-only` and restart the server (`cargo run` does not reload). The same "running code is older than the fix" cause produced the 20:27Z errors on 2026-10-16.

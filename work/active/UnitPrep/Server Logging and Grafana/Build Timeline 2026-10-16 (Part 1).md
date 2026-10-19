@@ -62,6 +62,12 @@ Part of [[Server Logging and Grafana - Index]]. The questions asked and the answ
 
 26. Boris: "log every detail in the vault". Before writing, Claude found that **other work had landed meanwhile**: api 1.9.130 and 1.9.131 and ui 1.6.100 (Sentry, log correlation, env label, tools dashboard), and two uncommitted vault notes by that session. Claude re-tested both read paths (still working at 16:19 PT) and listed the Grafana rules through the MCP server (both still exist and evaluate). The notes written here are linked from [[Server Logging and Grafana - Index]]; the other session's files were read but **not edited or committed**.
 
+## Phase 9: access and the first weekend (2026-10-17 to 10-19)
+
+27. Boris tried to connect Sentry with an **organization** token and it was rejected; Claude read Sentry's token docs (organization tokens are for CI/CLI with fixed permissions) and explained personal tokens and internal integrations, then listed the steps for a read-only personal token named `SENTRY_READ_TOKEN`. Boris then linked Sentry and Grafana in Claude Desktop's "On-Call" mode, added a Sentry plugin and CLI, and asked if Claude could now fully access both. Tested: this session's connector list has **no** Sentry or Grafana; the Sentry CLI (0.47.0, logged in as Boris) **works**; Grafana works through logcli, the MCP script and Chrome. Details: [[Sentry and Grafana Access for Claude]].
+28. Monday 2026-10-19 about 08:15 PT: Boris asked why lines visible in the terminal were not in Grafana, what the `before_acquire` warning was, why logging "stopped last week", and whether Sentry held anything real. Claude queried the local files, Alloy, Loki and the Sentry CLI: nothing stopped and the view was stale; the server was idle; the warning is the pool discarding dead connections on a 4-hourly job; Sentry holds only Friday's five test issues; and origin is ahead of the local checkouts. Full evidence: [[Check-in 2026-10-19 - Weekend Quiet, Pool Warning, Sentry Empty]].
+29. Boris: "document everything in the vault ... a good thing to have even as a demo of my knowledge, because both of these are overkill for something like OO". Claude added the check-in, access and demonstration notes and updated the index, findings, gotchas and decisions: [[Observability Stack as a Demonstration of Skill]].
+
 ## Slips and misreads in this session (so they are not repeated)
 
 - Compose `${VAR:?}` broke every `docker compose` command without `--env-file` (found by Boris).
@@ -71,6 +77,7 @@ Part of [[Server Logging and Grafana - Index]]. The questions asked and the answ
 - Batched click-then-click steps raced with dropdown rendering (folder, evaluation group, the More menu); step with a screenshot between.
 - A check run through **WSL's git against the Windows checkout** (`/mnt/c/.../my-vault`) reports every file as modified (file modes/line endings); the real state is what Windows git shows. Briefly looked like dozens of unexplained vault changes; it was a false alarm.
 - A malformed placeholder shell command (stray heredoc) was sent once while the vault notes were being written; harmless.
+- On 2026-10-19 a first `sentry issue list ... --period 14d` returned "No issues found" and nearly read as "Sentry is empty": the CLI lists **unresolved** issues by default, and all five issues were resolved test events. Separately, a Python string containing a backslash-r wrote a literal carriage return into a vault Gotchas line (found by reading the bytes with `cat -A`, repaired), and a long shell heredoc with mixed quotes failed to parse (the edit script was written to a file instead).
 
 ## Related
 
