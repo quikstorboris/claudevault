@@ -39,6 +39,10 @@ Part of [[Server Logging and Grafana - Index]]. Grafana-side tooling: [[Reading 
 - **Sentry**: the CLI from a terminal session, e.g. `sentry issue list quikstor-wf/orchestrator`, `sentry issue view <ID>`, `sentry api <path>`. Org `quikstor-wf`, projects `orchestrator` (Rust API) and `orchestrator-ui` (Next.js). Useful flags: `--query "is:resolved"` (the **default list is unresolved only**), `--fresh` (skip the cache), `--json` with `--fields`, `--period` (default 90 days). A pasted personal token is not required.
 - **Grafana**: files first, then `scripts/logcli.sh`, then the MCP server in a session started in `unitprep-api`, then Chrome (ordering and recipes in [[Reading Logs - Tools and Recipes]]).
 
+## Using it proactively (decided 2026-10-19)
+
+Having this access means Claude should **check Sentry and the logs without being asked**, and a scheduled routine now does so twice a day. The rules, the lookup order and the routine's guardrails are in [[Routine Monitoring and Troubleshooting Playbook]]; the same instruction is in both repos' `CLAUDE.md`.
+
 ## Not tested
 
 - Whether the CLI's OAuth login can **write** (resolve, assign, delete); it would not be used for that without asking Boris.

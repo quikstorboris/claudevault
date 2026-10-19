@@ -28,6 +28,8 @@ tags:
 | [[Check-in 2026-10-19 - Weekend Quiet, Pool Warning, Sentry Empty]] | Monday check: the logs were in Grafana (stale view), why the weekend looked silent, the `before_acquire` warning explained, Sentry holds only test issues, origin has moved ahead of the local checkouts. |
 | [[Sentry and Grafana Access for Claude]] | What Claude can reach and by which route (Sentry CLI works, no connectors in this session), Sentry token types from Sentry's docs, what was and was not tested. |
 | [[Observability Stack as a Demonstration of Skill]] | The honest portfolio view: the scale check (overkill for one user), why it was still worth it, skills demonstrated with evidence, quotable numbers, what not to overclaim. |
+| [[Routine Monitoring and Troubleshooting Playbook]] | **Read this to troubleshoot UnitPrep.** Claude can and should check Sentry and the logs itself: the order of lookup, known-benign patterns, what a real anomaly looks like, the twice-daily routine and its fix guardrails. |
+| [[Routine Check Log]] | Append-only log written by the twice-daily routine (07:30 and 19:30 PT): status and findings per run. |
 
 Outside this folder: [[Session 2026-10-16 (Part 2) — Sentry Setup, Log Correlation, Tools Dashboard]] and [[Observability Plan and Open Tasks (Sentry + Grafana)]] (the other session's record and the living open-task list, **that list is the one to update**); the cloud hub [[UnitPrep Fly.io and Deployment Notes]]; [[Production Readiness Checklist]]; [[Orchestrator Feature Backlog]] (alert email as an admin setting); [[Gotchas]] and [[Key Decisions]] (entries dated 2026-10-16); [[UnitPrep Tech Stack]] (rows for tracing-appender, Alloy, Grafana Cloud, logcli, mcp-grafana).
 
@@ -38,6 +40,12 @@ Outside this folder: [[Session 2026-10-16 (Part 2) — Sentry Setup, Log Correla
 - Read paths verified working at 16:19 PT: `scripts/logcli.sh` and the `grafana` MCP server.
 - **Update 2026-10-19 08:17 PT**: pipeline still healthy (Loki holds 146/66/15/16 lines for Oct 16-19, newest 10:14:24Z); Sentry has five resolved Friday test issues and no unresolved ones; the local `unitprep-api`/`unitprep-ui` checkouts are **behind origin** (api by 3 commits, ui by 1: 1.9.132 and 1.6.101 were pushed Friday 16:35-16:40 PT by another session) and Boris's server runs the older code. See [[Check-in 2026-10-19 - Weekend Quiet, Pool Warning, Sentry Empty]].
 - Boris's dev server needed a restart to pick up the pool fix, ClickUp logging and the 1.9.131 changes; whether he did after 1.9.131 is not recorded here.
+
+## Standing practice since 2026-10-19 (Boris: a very significant improvement in how Claude and he troubleshoot)
+
+- **Claude checks Sentry and the logs itself, before asking Boris for pasted output**, and routinely: `python3 scripts/anomaly_check.py` (in `unitprep-api`), the `./logs` files, `scripts/logcli.sh`, the Sentry CLI. Written into both repos' `CLAUDE.md` and the playbook.
+- **Scheduled routine `unitprep-anomaly-check`**: every day at 07:30 and 19:30 PT, runs the check, logs to [[Routine Check Log]], investigates anything found and may prepare a fix on a separate worktree branch (local commit only, never pushed or merged). Only runs while the desktop app is open and the laptop awake.
+- **The stack is frozen** (Boris: "no new starts ... until something comes up"): nothing new is added to observability unless a real problem calls for it.
 
 ## How to resume
 
@@ -62,6 +70,8 @@ Outside this folder: [[Session 2026-10-16 (Part 2) — Sentry Setup, Log Correla
 - [ ] **Fast-forward `git pull` in `~/Development/unitprep-api` and `unitprep-ui`, then restart the server**, to bring it level with origin (1.9.132 / 1.6.101); not done because it changes files under a running server and was not asked.
 - [ ] Confirm which background job fires every 4 hours from server start (it explains the `:14:24` `before_acquire` warnings); inferred from timestamps only.
 - [ ] Prove Sentry delivery from the running API with a real or deliberate error (none since the last restart).
+- [ ] **First routine runs** (first at 19:30 PT on 2026-10-19): check [[Routine Check Log]] for entries; confirm the task actually runs unattended and writes its log; review any `auto-fix/*` worktree under `~/Development/autofix/` before merging.
+- [ ] Commit and push the repo-side pieces (`unitprep-api/scripts/anomaly_check.py` and the new `CLAUDE.md` sections in both repos) once Boris wants them on GitHub; the routine uses the script from the main checkout.
 - [ ] Decide whether to add this stack to `perf/Brag Doc.md` ([[Observability Stack as a Demonstration of Skill]]).
 
 ## Things recorded here that are unverified (do not treat as fact)
