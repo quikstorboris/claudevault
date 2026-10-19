@@ -33,7 +33,7 @@ Outside this folder: [[Session 2026-10-16 (Part 2) — Sentry Setup, Log Correla
 
 ## State at ~16:30 PT, 2026-10-16
 
-- `unitprep-api`: logging shipped in **1.9.129** (`v1.9.129`), Sentry in 1.9.130, log-correlation/env label/tools dashboard in 1.9.131; docs commit `3db7be1`. `unitprep-ui`: `v1.6.99` (company page editing), `v1.6.100` (Sentry). All pushed. Part 1's last vault commit `767222a` is pushed; Part 2's two vault notes and this folder's new notes were **uncommitted** when written.
+- `unitprep-api`: logging shipped in **1.9.129** (`v1.9.129`), Sentry in 1.9.130, log-correlation/env label/tools dashboard in 1.9.131; docs commit `3db7be1`. `unitprep-ui`: `v1.6.99` (company page editing), `v1.6.100` (Sentry). All pushed. All of Part 1's vault notes and Part 2's two notes are committed and pushed as of 2026-10-19 (see the vault log).
 - Grafana: dashboard "UnitPrep API Logs" (uid `unitprep-api-logs`), alert rules "UnitPrep API errors" (`bg1fr6erxfthca`) and "UnitPrep API panic" (`fg1frrc3623gga`) **still exist and evaluate** (normal, ok at 16:19 PT) although Part 2 declared them retired in favour of Sentry; contact point `email-boris`.
 - Read paths verified working at 16:19 PT: `scripts/logcli.sh` and the `grafana` MCP server.
 - **Update 2026-10-19 08:17 PT**: pipeline still healthy (Loki holds 146/66/15/16 lines for Oct 16-19, newest 10:14:24Z); Sentry has five resolved Friday test issues and no unresolved ones; the local `unitprep-api`/`unitprep-ui` checkouts are **behind origin** (api by 3 commits, ui by 1: 1.9.132 and 1.6.101 were pushed Friday 16:35-16:40 PT by another session) and Boris's server runs the older code. See [[Check-in 2026-10-19 - Weekend Quiet, Pool Warning, Sentry Empty]].
@@ -48,6 +48,7 @@ Outside this folder: [[Session 2026-10-16 (Part 2) — Sentry Setup, Log Correla
 
 ## Open items (Part 1's view; the living list is in the Observability Plan note)
 
+- [ ] **Re-import the dashboard** (Part 2's 1.9.131 version with the Environment picker and "Tools and people"): the live dashboard still has 17 panels as of 2026-10-19.
 - [ ] **Pause or delete the two Grafana email rules** (Sentry now owns error emails), or decide to keep them; otherwise errors email twice.
 - [ ] **Alert email as an admin setting** ([[Orchestrator Feature Backlog]], a 16:00 PT reminder fired 2026-10-16). Design question: the app cannot edit Grafana's contact point without a write token, so either the app does its own alerting or syncs through Grafana's API; a branded email needs the app to send mail itself.
 - [ ] **Grafana trial ends 2026-10-30**; verify the permanent free-tier limits ([[Production Readiness Checklist]]).
