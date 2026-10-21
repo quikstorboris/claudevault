@@ -122,6 +122,26 @@ Coverage says a line ran, not that an assertion would fail if it broke. The corp
 - First record: [[Real Document Record - Longview Self Storage Rental Agreement]].
 - Corpus harness + case 1 in the repo; `scripts/coverage.sh` + `scripts/coverage_by_area.py` to repeat the measurement.
 
+## 7b. Progress: item 3 (auth handler tests), 2026-10-19
+
+Boris chose item 3 first. Added 4 real-database test files in `unitprep-api/src/api/` (all `*_db_`-named, so `scripts/run_ci_db_tests.sh` runs them in CI automatically; local run: 181 `_db_` tests pass, default suite, clippy `-D warnings` and fmt clean). Not yet committed at time of writing.
+
+| File | Tests | Covers |
+|---|---|---|
+| `auth_user_admin_db_tests.rs` | 16 | role grant/revoke and deactivate/reactivate: audit rows with before/after, last-admin guard (both revoke and deactivate), cannot change own roles, soft-deleted target, sessions revoked on deactivate, reactivate returns user to `invited` with a working one-time invite, and **the database itself refusing a non-admin who claims the permission** (the 2026-07-30 escalation class) |
+| `auth_totp_db_tests.rs` | 13 | enrol/confirm, 5-wrong-codes lockout (enrolment and step-up), no counting while locked, lock expiry + counter reset, replay guard, 5-minute elevation, re-enrolment requires fresh passkey check (and an expired one does not count), secret never reaches the audit log, one user's factor never steps up another |
+| `auth_invites_db_tests.rs` | 10 (+2 quarantined) | create_invite (normalisation, hashed token, no token in audit, reissue retires old link and replaces role, refusals audited, `users.manage` alone cannot assign a role, DB refuses non-admin) and recover_account (wipes passkeys/TOTP/sessions, one fresh invite, before/after audit, refusals, 404 vs 400, DB refuses non-admin). Redemption (expiry, single use) was already in `auth_register_db_tests` |
+| `auth_login_db_tests.rs` | 9 | passkey login: four ineligible-address shapes return an identical 401 (no enumeration), single-use ceremony, rejected assertion = no session + audit, replay refused, credentials removed mid-ceremony, counter persisted, new-IP+device gate only when TOTP confirmed, familiar IP or first login never anomalous |
+
+"Login lockout" note: passkey login has **no per-account failed-attempt counter by design** (assertions are not guessable); the per-IP rate limit on `/auth/login/*` is already tested in `http_integration_tests`, and the TOTP code lockout is in the TOTP file above.
+
+### Two real defects found (quarantined as `*_known_gap_*`, `#[ignore]`d, skipped by CI via `--skip known_gap`)
+
+1. **A soft-deleted user's email cannot be re-invited.** `issue_invite`'s comment says it can, but `auth.users.email` has a plain `UNIQUE` constraint (`users_email_key`), not one scoped to `deleted_at IS NULL`, so the INSERT collides and the endpoint returns 500. Nothing in the app soft-deletes a user today, so it has not bitten. Fix = partial unique index, or make the handler agree with the schema.
+2. **`already_credentialed` refusal in `create_invite` is dead code.** It counts `auth.webauthn_credentials` inside the admin's RLS transaction, but that table's only policy is owner-only, so the count for another user is always 0. The next check (`status != 'invited'`) still blocks every real case, so this is a dead guard, not an open hole. Fix = count through a SECURITY DEFINER lookup.
+
+Still open from the plan: items 2, 4-10. Still untested in this area: `auth_passkey_reverify` and `webauthn_backend` (need a Playwright virtual authenticator, plan item 7), `auth_audit_logs_export`, `step_up_policy.rs` own tests.
+
 ## 8. Open questions for Boris
 
 - Which of items 2-5 to start with? Recommendation: 2 (route inventory) first because it is a day of work for a permanent guarantee, then 3.
