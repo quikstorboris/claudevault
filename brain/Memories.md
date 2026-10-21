@@ -12,6 +12,7 @@ Persistent context and knowledge retained across sessions. Each topic lives in i
 - [[Key Decisions]] — architectural and workflow decisions worth recalling
 - [[Patterns]] — recurring patterns and conventions discovered across work
 - [[Dev Principles]] — the ~15 code-quality/security/workflow principles actually enforced across UnitPrep work, compiled from Patterns + Key Decisions + audit practice
+- [[Rustdoc and Code Comment Standard]] — standing rule (2026-10-20): how backend code comments are written so `cargo doc` pages are informative and consistent; flag quick doc wins while working
 - [[CI Backlog]] — check ideas without a home yet in a tier of [[UnitPrep CI-CD Framework]] (the actual living CI/CD design — Tier 0 local preflight is built, Tiers 1-2 are designed and dormant)
 - [[Gotchas]] — things that have bitten before and will bite again
 - [[Collaboration Style]] — how Boris likes to work through hard technical decisions
