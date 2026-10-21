@@ -230,3 +230,13 @@ Boris's own assessment: both Grafana and Sentry are **overkill for something lik
 - **Claude should check Sentry and the logs itself**, at the start of any troubleshooting, after runtime-affecting changes, and routinely, instead of asking Boris to paste evidence. Boris: "a very significant improvement of how you and I are interacting and troubleshooting." Recorded as a standing rule in both repos' `CLAUDE.md` and the playbook.
 - **A routine does it unattended**: scheduled task `unitprep-anomaly-check`, daily at 07:30 and 19:30 PT (12 hours apart, outside working hours), runs `scripts/anomaly_check.py`, logs to the vault, investigates anomalies, and "fixes them if anything comes up". **Claude chose the guardrails** because unattended code changes are risky: it never touches the main checkouts (both had another session's uncommitted work on 2026-10-19), fixes only in a separate worktree on an `auto-fix/<id>` branch, runs the repo preflight, commits locally, and **never pushes, tags, merges, bumps versions, resolves Sentry issues, runs migrations or touches prod**; Boris reviews and merges. If Boris wants fixes pushed straight to main that is a deliberate change to make, not the default.
 - Details: [[Routine Monitoring and Troubleshooting Playbook]]; index: [[Server Logging and Grafana - Index]].
+
+## UnitPrep: Neon compute outranks latency; the round-trip tax is accepted, nothing is kept warm, nothing moves (Boris, 2026-10-21)
+
+Context: logs showed 300 ms to 2 s requests ([[Latency Investigation 2026-10-20 - Round Trips vs Neon]]); the cause is ~36 ms per database statement and ~300 ms per new connection to Neon (the code itself answers in 5-12 ms locally).
+
+- **No keep-warm connections, no `min_connections`, no pings**: they fight scale-to-zero, and Neon compute time is the scarce resource. The post-idle reconnect cost is the accepted price of autosuspend. (Claude had suggested keep-warm; Boris rejected it, correctly.)
+- **No region or cloud move for now** ("not moving anything"); the same-region fix stays on the shelf (see [[UnitPrep Fly.io and Deployment Notes]]).
+- **Any change that reduces compute is a win, but do not go crazy**: done = `filter-options` in one statement and removal of the three 4-hour vendor-registry refresh timers (~6 wakes/day on an idle server); **not done / rejected for now** = caching the session lookup (a revoked session would stay valid for seconds).
+- **Process Street sync schedule stays as is.**
+- Details and the full session record: [[Session 2026-10-20 to 21 — OO Review Attempt, Latency and Neon Compute Audit, Release 1.9.134]].

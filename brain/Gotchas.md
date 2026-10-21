@@ -39,6 +39,20 @@ Things that have bitten before and will bite again.
 
 **How to apply:** if this error returns with no `before_acquire` warnings, look at the pooler path, not the pool settings. Do not reintroduce `conn.ping()`.
 
+**Correction 2026-10-21:** the "real `SELECT 1`" above was first written as an *unnamed prepared statement* (`.persistent(false)`), which is itself unsafe through the pooler; it is now sent over the simple query protocol. See the next entry.
+
+## Never send a health check or any pooler-path statement as a prepared statement: `unnamed prepared statement does not exist` (2026-10-21)
+
+**Fact:** at 09:10-09:14 PT the dev server returned four HTTP 500s (`company detail`, `policies`, `session resolution`, `clickup prefetch`), all `pool timed out while waiting for an open connection`, right after a passkey login following ~6 h idle. Each was preceded by a burst (3-7 within ~5 ms) of `WARN error from before_acquire ... unnamed prepared statement does not exist`. Zero occurrences in the 7 days of Loki before it. The Grafana error alert fired (Boris got 3 emails, 4 errors).
+
+**Cause (inferred, not reproduced):** `ping_through_to_backend` used `query("SELECT 1").persistent(false)`: an unnamed prepared statement, whose Parse/Bind/Execute are separate messages that a transaction-mode PgBouncer (Neon `-pooler`) may route to different backends. It is the app's only unnamed statement. A live probe against Neon (40 rounds x 8 connections, both variants) produced no error from either, so the failure is intermittent, like the 10-16 one.
+
+**Fix (unitprep-api, uncommitted until released):** `conn.execute(sqlx::raw_sql("SELECT 1"))`, the simple query protocol: one self-contained message, still hits a real backend. Note `sqlx::query(..)` always uses the extended protocol even with no binds; only `raw_sql`/a bare `&str` goes simple. Test `the_idle_ping_leaves_no_prepared_statement_behind` (local test-db); it cannot reproduce the PgBouncer split.
+
+**Still unexplained:** why a few discarded connections became a full 10 s pool timeout rather than quick replacements. If a pool timeout recurs *without* the `unnamed prepared statement` warning, investigate that separately (pool exhaustion / Neon wake), not the ping.
+
+**How to apply:** under this pooler use only constructs that are correct per transaction: `SET LOCAL`, schema-qualified names, simple-protocol pings. Related: [[Findings - DB Connection Drops, Cold Starts and Latency]], [[Dev Principles]] #12-13.
+
 ## A `.git` folder found inside a raw file-mirror backup may be empty
 
 A backup folder having a `.git` directory doesn't mean it has history -- a byte-for-byte file mirror can carry an empty `git init` skeleton along with everything else. Confirm with `find .git/objects -type f | wc -l` or `git fsck` before trusting it as a source of history to recover. Full incident and the rest of the migration steps in [[Laptop Migration]].
@@ -474,6 +488,8 @@ Real root cause of [[Session 2026-09-21–22 — Neon Compute-Usage Root Cause &
 
 **How to apply**: when adding or reviewing any background poll/refresh loop against a serverless-autosuspend database (Neon, and likely similar platforms), check its interval against the platform's actual idle-suspend timeout, not just against "is this too much load." An interval at or near that timeout is the worst case -- it guarantees the compute never gets to suspend for as long as the process runs, regardless of real traffic. Fixed here by widening the interval to 4 hours (still same-day pickup for a self-service-added vendor row, the property the original 5-minute choice was protecting). Worth a pass over this codebase's other periodic background tasks (the `router.rs` 60s rate-limit-bucket cleanup is in-memory only, so it doesn't touch Postgres/Neon and isn't at risk the same way) if a similar symptom shows up again.
 
+**Superseded 2026-10-21:** the 4-hour interval is gone too. Nothing writes the vendor tables while the server runs (migrations only, and a deploy restarts the server), so the timer only woke Neon about six times a day to re-read an unchanged table. The caches now load once at startup (`start_retry_if_unloaded` retries only if that load failed, then stops), and a future vendor-editing UI should call `vendor_format::refresh` from its save handler instead of reintroducing a timer. See [[Latency Investigation 2026-10-20 - Round Trips vs Neon]].
+
 ## Next.js 16 + Turbopack dev mode: a soft client-side navigation can silently fail to complete after a long-idle tab
 
 Assessed (not confirmed via live repro) 2026-09-22 in `unitprep-ui`, diagnosing [[Session 2026-09-21–22 — Neon Compute-Usage Root Cause & Login-Stuck-After-Idle Fix|a login-stuck-after-idle bug]]: after leaving a tab idle a long time, a passkey login would visibly succeed (server logs confirm real, authenticated `/auth/login/finish` and `/health/whoami` responses) but the UI stayed on `/login` -- `router.replace("/clients")` appeared to do nothing, no error thrown or logged anywhere. `Ctrl+Shift+R` always fixed it.
@@ -688,3 +704,11 @@ It means the pool tested an idle connection (a real `SELECT 1`), found it dead b
 ## After another session pushes, the local checkouts (and the running server) can be behind origin without anyone noticing (2026-10-19)
 
 On Monday `git fetch` showed `unitprep-api` behind `origin/main` by 3 commits and `unitprep-ui` by 1 (api 1.9.132 and ui 1.6.101 had been pushed Friday afternoon from another session); the server and the `cargo watch` container were still running 1.9.131 / 1.6.100. **How to apply:** `git fetch -q origin --tags && git log HEAD..origin/main --oneline` before assuming the checkout matches GitHub, then `git pull --ff-only` and restart the server (`cargo run` does not reload). The same "running code is older than the fix" cause produced the 20:27Z errors on 2026-10-16.
+
+## A second API instance started inside the `api-dev` container silently inherits your real credentials, and `pkill` is not installed there (2026-10-21)
+
+`docker exec ... unitprep` from `/app` makes `dotenvy` read the bind-mounted `/app/.env.local`, so a "local test" instance picked up the **real Process Street key** and `/clients/search` made ~90 read-only calls to the live PS API (plus ClickUp rate-limiter waits) before it was noticed. The dev container's own env has no integration secrets; `.env.local` is the leak path. **How to apply:** start any bench or experiment instance from an **empty working directory** (`cd /tmp/benchcwd`), set fake values for every required integration var (`DROPBOX_APP_KEY`/`_APP_SECRET`/`_REFRESH_TOKEN`/`_ROOT_NAMESPACE_ID`/`_ROOT_PATH`, `PROCESS_STREET_API_KEY`, `INTEGRATION_SECRETS_ENCRYPTION_KEY` as 64 hex zeros), point `CLICKUP_API_BASE_URL` at a dead port, blank `SENTRY_DSN`, put `LOG_DIR` in `/tmp` so Alloy never ships it, and use `TEST_DATABASE_URL`'s `test-db` as `DATABASE_URL`. `pkill`/`curl`/`python3` do not exist in the container: find the PID via `/proc/*/cmdline` and `kill` it exactly (match the full `/app/target/debug/unitprep` path so Boris's own `target/debug/unitprep` dev server is not hit; SIGTERM waits for in-flight requests, `kill -9` if needed); use bash `/dev/tcp` for HTTP. Never `git stash` in the main checkout to compare code (see the checkout rules in `CLAUDE.md`); use a worktree. Source: [[Session 2026-10-20 to 21 — OO Review Attempt, Latency and Neon Compute Audit, Release 1.9.134]].
+
+## `git status` on the vault from WSL shows ~700 modified files that are only file-mode bits (2026-10-21)
+
+The vault lives on NTFS (`/mnt/c/...`); WSL's git sees every file as mode 100755, so `git status` lists hundreds of template files as modified (`old mode 100644, new mode 100755`) while the real content change is a handful of notes. **How to apply:** check and commit the vault from Windows Git (`cd /c/Users/bmaksimov/my-vault`), not from WSL, or set `core.fileMode=false` for WSL reads; never `git add -A` from WSL.

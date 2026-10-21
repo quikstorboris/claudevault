@@ -68,7 +68,7 @@ Outside this folder: [[Session 2026-10-16 (Part 2) — Sentry Setup, Log Correla
 - [ ] At the cloud move: stdout JSON, `LOG_DIR` unset, `env=prod`, host region next to Neon us-west-2, decide keep-awake vs cold start ([[UnitPrep Fly.io and Deployment Notes]]).
 - [ ] GitHub Actions results for the `v1.9.129` and `v1.6.99` tag runs were never looked at by Part 1.
 - [ ] **Fast-forward `git pull` in `~/Development/unitprep-api` and `unitprep-ui`, then restart the server**, to bring it level with origin (1.9.132 / 1.6.101); not done because it changes files under a running server and was not asked.
-- [ ] Confirm which background job fires every 4 hours from server start (it explains the `:14:24` `before_acquire` warnings); inferred from timestamps only.
+- [x] Which background job fired every 4 hours from server start (the `:14:24` `before_acquire` warnings): confirmed 2026-10-21 from the code as the three vendor-registry refresh tasks (`vendor_format` x2, `vendor_file_meta`), which ticked together; removed the same day, see [[Latency Investigation 2026-10-20 - Round Trips vs Neon]]. These warnings should stop after the server restarts on the new build.
 - [ ] Prove Sentry delivery from the running API with a real or deliberate error (none since the last restart).
 - [ ] **First routine runs** (first at 19:30 PT on 2026-10-19): check [[Routine Check Log]] for entries; confirm the task actually runs unattended and writes its log; review any `auto-fix/*` worktree under `~/Development/autofix/` before merging.
 - [ ] Commit and push the repo-side pieces (`unitprep-api/scripts/anomaly_check.py` and the new `CLAUDE.md` sections in both repos) once Boris wants them on GitHub; the routine uses the script from the main checkout.

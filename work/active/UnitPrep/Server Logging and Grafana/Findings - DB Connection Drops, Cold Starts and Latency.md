@@ -63,6 +63,14 @@ Per-route latency from Loki (last 3 h, ~14:05 PT, `request completed` lines, ids
 
 Read on 2026-10-19 ([[Check-in 2026-10-19 - Weekend Quiet, Pool Warning, Sentry Empty]]): with no traffic since Friday evening, the server logged only the 03:00 PT sync and a few warnings. At **2026-10-19T10:14:24Z** two `WARN error from 'before_acquire' ... expected to read 5 bytes, got 0 bytes at EOF` appeared together with **no ERROR and no failed request**: two dead pooled connections were discarded and replaced by the real `SELECT 1` ping, which is the fix doing its job (the first live observation was the 2.3 s cold start on 10-16 that returned 200 instead of 500). The timestamp is exactly **36 h = 9 x 4 h** after the server's last start (2026-10-16T22:14:24Z), and a `slow statement` on 10-18 at 18:14:26Z is exactly 44 h = 11 x 4 h after it, so a **background job every 4 hours from startup** is what touches the pool. (Which job: inferred from the timestamps and the efficiency refactor's note about "two 4-hour registry refreshes"; the code was not read.) Each such wake brings Neon's compute up for a few minutes. Still one more observation, not proof of the original idle-500 cause.
 
+## 6. 2026-10-21: the idle ping itself failed (unnamed prepared statement)
+
+The `SELECT 1` ping from section 1 was sent as an **unnamed prepared statement** (`persistent(false)`). At 16:10:48-16:14:01Z (09:10-09:14 PT), after a passkey login following ~6 h idle, 12 `before_acquire` WARNs `unnamed prepared statement does not exist` (bursts of 3, 7, 1, 1) preceded four HTTP 500s that were each exactly 10 s later (`pool timed out`, the acquire timeout): `GET /clients/:id`, `GET .../policies`, `GET /dedup/file-requirements`, `POST .../clickup/prefetch-tasks`. Sentry ORCHESTRATOR-2 to -5, env `dev`. First occurrence in 7 days of Loki. Boris's error alert emailed 3 times.
+
+- Reading (inferred): PgBouncer transaction mode split the unnamed statement's Parse from its Bind; healthy connections were discarded; replacements did not arrive within 10 s (why exactly is **unexplained**).
+- Fix: simple query protocol (`raw_sql`), see [[Gotchas]] ("Never send a health check ... as a prepared statement"). A 40 x 8-connection live probe against Neon showed no failure from either variant, so this is not reproducible on demand; verification is "no recurrence", watch the Grafana error panel and `scripts/anomaly_check.py`.
+- This supersedes the "real `SELECT 1`, unnamed" wording in section 1's Fix bullet.
+
 ## 4. Still to verify
 
 - A long idle with the fix running **and** the real 500 window: watch the dashboard's "Database connection errors" panel for a week; zero 500s after idle would support the hypothesis.

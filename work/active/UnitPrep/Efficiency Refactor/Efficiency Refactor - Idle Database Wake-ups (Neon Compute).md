@@ -36,8 +36,8 @@ Tests: 10 unit tests for the schedule plus 3 real-DB `_db_` tests (expired row r
 
 | Source | Cadence | Verdict |
 |---|---|---|
-| Vendor-format registry refresh (`client_ops/vendor_format.rs`) | every 4 h | fine; could be made lazy later |
-| Vendor file-meta refresh (`client_ops/vendor_file_meta.rs`) | every 4 h | fine |
+| Vendor-format registry refresh (`client_ops/vendor_format.rs`) | ~~every 4 h~~ **removed 2026-10-21**: loaded once at startup, retried only if that load failed | was ~6 wakes/day on an idle server; see [[Latency Investigation 2026-10-20 - Round Trips vs Neon]] |
+| Vendor file-meta refresh (`client_ops/vendor_file_meta.rs`) | ~~every 4 h~~ **removed 2026-10-21**, same as above | same |
 | Process Street background sync (`clients/sync`) | `sync_interval_hours` (1-168) | fine; keep the interval at hours |
 | `GET /health/db` | whatever polls it | **do not point a host or uptime health check at it** (use `/health`, which does not touch the database) |
 | The new scheduled sweep | a few times per active day | fine |
