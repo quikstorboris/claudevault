@@ -41,7 +41,7 @@ Boris observed backend latencies of 300 ms to 1-2 s where early on everything wa
 - Approved: compute audit, the `filter-options` fix, and removing the vendor-registry refresh timers ("go for it if it's a better route").
 - Approved: commit all stray work coherently, with version bumps if needed.
 
-## 4. What shipped (all local; **nothing pushed**)
+## 4. What shipped (`unitprep-api` pushed to GitHub 2026-10-22 with tag `v1.9.134`; the vault commits are local)
 
 `unitprep-api`, in order:
 
@@ -50,9 +50,12 @@ Boris observed backend latencies of 300 ms to 1-2 s where early on everything wa
 | `b1adf77` | `GET /clients/filter-options` reads states, previous-PMS and assigned staff in **one** statement instead of three (two fewer round trips, `staff_directory()` called once). New ignored real-DB test. |
 | `d0480cb` | **Removed the three 4-hour registry refresh timers** (`vendor_format` units/tenants, `vendor_file_meta`). Each registry loads once at startup; `start_retry_if_unloaded` retries (30 s doubling, cap 15 min) only if that load failed, then stops; `refresh()` is the hook for a future vendor-editing UI. Verified on a started instance: 3 startup loads (was 6), 0 SQL in the following 20 s. Retry timing tested on a paused clock. |
 | `fe2780a` | The idle-connection ping is sent with `raw_sql` (simple query protocol), not an unnamed prepared statement (see [[Gotchas]], the 2026-10-21 pooler entry; code was written earlier the same day, found uncommitted). |
-| `112aff4` + tag `v1.9.134` | Release 1.9.134: `Cargo.toml`, `Cargo.lock`, `CHANGELOG.md` (`[Unreleased]` moved under 1.9.134; `--locked` verified in the container). No migration, no API shape change. |
+| `112aff4` | Release 1.9.134: `Cargo.toml`, `Cargo.lock`, `CHANGELOG.md` (`[Unreleased]` moved under 1.9.134; `--locked` verified in the container). No migration, no API shape change. |
+| `c560ba0` + tag `v1.9.134` | **Security:** `Cargo.lock`-only update of `rustls-webpki` 0.103.15 to 0.103.16 (RUSTSEC-2026-0382) and `webpki-roots` / `webpki-root-certs` 1.0.9 to 1.0.10 (RUSTSEC-2026-0381 / -0383), folded into 1.9.134. See the push incident below. The unpublished tag was moved to this commit; release date set to 2026-10-22. |
 
-`unitprep-ui`: clean, no commits, **no version bump** (1.6.103 stays compatible). Quality gates run in the dev container: workspace tests, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo fmt --check`; the full `scripts/preflight.sh` was **not** run (it will run on `git push` via the `pre-push` hook). One interaction to know: the ignored `pool_ping_policy_latency_benchmark` failed once when run in parallel with `the_idle_ping_discards_connections_whose_backend_was_killed` (that test kills every pooled backend in the shared DB) and passes alone.
+**Push incident (2026-10-22):** the first `git push` was blocked by the `pre-push` preflight: step 4 `cargo audit` found 3 new vulnerabilities, all published 2026-10-19/20 (after the last clean audit) and unrelated to this session's code. All three are patch bumps under every outbound TLS connection (Neon, Process Street, ClickUp, Dropbox), so they were upgraded rather than allow-listed (`cargo update -p rustls-webpki -p webpki-roots@1.0.9 -p webpki-root-certs`; `webpki-roots` needs the `@1.0.9` form because `0.26.11` is also in the tree). `cargo audit` was clean afterwards except the two already-allowed warnings (bincode unmaintained, chacha20 yanked); container tests stayed green; the second push passed all 10 preflight steps. Lesson: run `cargo audit` before cutting a release, because new advisories appear between sessions; the gate did its job.
+
+`unitprep-ui`: clean, no commits, **no version bump** (1.6.103 stays compatible). Quality gates run in the dev container: workspace tests, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo fmt --check`; the full `scripts/preflight.sh` ran later on `git push` via the `pre-push` hook (first run failed on new RustSec advisories, second passed; see below). One interaction to know: the ignored `pool_ping_policy_latency_benchmark` failed once when run in parallel with `the_idle_ping_discards_connections_whose_backend_was_killed` (that test kills every pooled backend in the shared DB) and passes alone.
 
 **To pick up the changes: restart the dev server** (`cargo run` does not reload; the running server is still the pre-change build). The `before_acquire` warnings at 4-hour intervals (`:14:24`) in [[Check-in 2026-10-19 - Weekend Quiet, Pool Warning, Sentry Empty]] should stop: they were these three timers.
 
@@ -67,7 +70,7 @@ Boris observed backend latencies of 300 ms to 1-2 s where early on everything wa
 
 - **The OO review (section 1)** is undone.
 - **Query-level compute data:** `pg_stat_statements` is not installed on the dev DB; real per-statement time on Neon is still unmeasured beyond the `EXPLAIN ANALYZE` pass.
-- Un-pushed: `unitprep-api` is 4 commits ahead (`b1adf77`, `d0480cb`, `fe2780a`, `112aff4`) plus tag `v1.9.134`; push triggers the `pre-push` preflight.
+- Pushed (2026-10-22): `unitprep-api` `main` is at `c560ba0` with tag `v1.9.134`; the GitHub Actions tag run has not been looked at yet. The vault's four 2026-10-21 commits and this note's follow-up are **not pushed**.
 - Server restart pending (above); confirm the `unnamed prepared statement` warnings do not recur (Grafana error panel, `scripts/anomaly_check.py`).
 - Possible further compute levers, not done: session lookup caching (rejected for now: a revoked session would stay valid for seconds), folding session lookup and RLS setup into one round trip.
 
