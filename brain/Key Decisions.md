@@ -240,3 +240,7 @@ Context: logs showed 300 ms to 2 s requests ([[Latency Investigation 2026-10-20 
 - **Any change that reduces compute is a win, but do not go crazy**: done = `filter-options` in one statement and removal of the three 4-hour vendor-registry refresh timers (~6 wakes/day on an idle server); **not done / rejected for now** = caching the session lookup (a revoked session would stay valid for seconds).
 - **Process Street sync schedule stays as is.**
 - Details and the full session record: [[Session 2026-10-20 to 21 — OO Review Attempt, Latency and Neon Compute Audit, Release 1.9.134]].
+
+## UnitPrep log-file retention is a setting, not a constant (Boris, 2026-10-22)
+
+Boris asked why the 7-day file retention was a hardcoded constant ("don't we prefer variables?"). No reason had been recorded; it was an expedient choice by Claude on 2026-10-16 that contradicted the repo's own "prefer data over hardcoding" principle. Decision: **`LOG_RETENTION_DAYS`** env var, default 7, validated to 1-365 like `DB_POOL_MAX_CONNECTIONS`, a bad value warns on stderr and keeps the default. Rule of thumb recorded: a constant fits program logic and safety values (one correct value, a change needs review and tests); a setting fits operational knobs that can differ by environment or be changed without a rebuild; the middle path is a constant default plus a validated override. Loki's retention is not ours to set (Grafana plan: Free 14 days, Pro 30). See [[Server Logging Design and Decisions]].

@@ -70,13 +70,15 @@ Outside this folder: [[Session 2026-10-16 (Part 2) — Sentry Setup, Log Correla
 - [ ] **Fast-forward `git pull` in `~/Development/unitprep-api` and `unitprep-ui`, then restart the server**, to bring it level with origin (1.9.132 / 1.6.101); not done because it changes files under a running server and was not asked.
 - [x] Which background job fired every 4 hours from server start (the `:14:24` `before_acquire` warnings): confirmed 2026-10-21 from the code as the three vendor-registry refresh tasks (`vendor_format` x2, `vendor_file_meta`), which ticked together; removed the same day, see [[Latency Investigation 2026-10-20 - Round Trips vs Neon]]. These warnings should stop after the server restarts on the new build.
 - [ ] Prove Sentry delivery from the running API with a real or deliberate error (none since the last restart).
+- [ ] **Stale ClickUp panel query** in the repo's dashboard JSON (and the live dashboard): it still matches the old "ClickUp rate limiter full" text; since api 1.9.135 the message is `Rate limiter full` with a `limiter` field ([[Grafana Cloud Setup and Objects]]). Not fixed (frozen).
 - [ ] **First routine runs** (first at 19:30 PT on 2026-10-19): check [[Routine Check Log]] for entries; confirm the task actually runs unattended and writes its log; review any `auto-fix/*` worktree under `~/Development/autofix/` before merging.
 - [ ] Commit and push the repo-side pieces (`unitprep-api/scripts/anomaly_check.py` and the new `CLAUDE.md` sections in both repos) once Boris wants them on GitHub; the routine uses the script from the main checkout.
+- [x] **Log-file retention is now a setting**, `LOG_RETENTION_DAYS` (default 7, 1-365), done 2026-10-22 at Boris's request after he asked why it was a constant; api commit `5a7b6eb`, local, **not pushed** ([[Server Logging Design and Decisions]]). The running server needs a restart to read it; set it under `api-dev` in `docker-compose.yml` for the container.
 - [ ] Decide whether to add this stack to `perf/Brag Doc.md` ([[Observability Stack as a Demonstration of Skill]]).
 
 ## Things recorded here that are unverified (do not treat as fact)
 
-Fly.io specifics (`fly-log-shipper`, ephemeral disks, `fly logs` buffer, which region is nearest Neon us-west-2); Grafana free-tier limits and retention; whether `alerting_manage_routing` is read-only under `--disable-write`; the exact five-round-trip count per request (read from code, not traced); the cause of the idle 500s (hypothesis: a pooler answers a bare `Sync` ping); whether the alert test email rendered as intended (Grafana confirmed it was sent, nobody looked at it); `grafanactl`/Terraform/Foundation SDK details.
+Fly.io specifics (`fly-log-shipper`, ephemeral disks, `fly logs` buffer, which region is nearest Neon us-west-2); Grafana free-tier limits (retention 14 days and 50 GB/month were verified on 2026-10-22 from the pricing page; other limits were not); whether `alerting_manage_routing` is read-only under `--disable-write`; the exact five-round-trip count per request (read from code, not traced); the cause of the idle 500s (hypothesis: a pooler answers a bare `Sync` ping); whether the alert test email rendered as intended (Grafana confirmed it was sent, nobody looked at it); `grafanactl`/Terraform/Foundation SDK details.
 
 ## Related
 

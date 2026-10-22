@@ -31,6 +31,8 @@ Evidence (all read at 08:17 PT, 15:17Z):
 
 ## Finding 2: "logging stopped last week" was the server being idle
 
+> **Correction (2026-10-22):** the "ClickUp rate limiter full, call is waiting" warnings at 10:00Z (03:00 PT) were **not ClickUp traffic**. The shared `RateLimiter` type hard-coded the word "ClickUp" in its message, but the nightly Process Street sync also uses it as its own pacer (6 calls per 10 s, visible as `limit: 6, window_secs: 10` in the line). So the 25 / 3 / 3 waits counted here were the deliberate **Process Street pacer**, benign, and the claim below that the sync "also makes ClickUp calls" was **wrong** (this note's author inferred it from the label without checking the limiter's other user). Found and fixed by another session: api 1.9.135 names the limiter (`Rate limiter full, call is waiting` plus a `limiter` field, `clickup` or `process_street`) and 1.9.136 moved `RateLimiter` to a neutral module; `scripts/anomaly_check.py` now counts the two separately. Entries written before 2026-10-22 use the old label.
+
 The server writes a line per request and for a few background jobs; it logs nothing while nobody uses it. No request has hit the server since Friday evening, so the weekend's files are small. What was in them (counted from the files):
 
 | Day | Lines | What they are |

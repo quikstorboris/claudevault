@@ -31,7 +31,7 @@ Hard rules: everything above is **read-only**; never `source` `.env.local`; neve
 | Pattern | Why it is fine | Source |
 |---|---|---|
 | `WARN before_acquire ... expected to read 5 bytes, got 0 bytes at EOF` **with no ERROR beside it** | The pool tested an idle connection, found it dead (Neon suspended its compute) and replaced it. Recurs at 4-hour offsets from server start (a background job). | [[Check-in 2026-10-19 - Weekend Quiet, Pool Warning, Sentry Empty]] |
-| `WARN ClickUp rate limiter full, call is waiting` bursts around 10:00Z (03:00 PT) | The daily Process Street person-index sync also calls ClickUp; the in-process limiter delays calls, none fail (25 on 10-17, then 3 a day). | same |
+| `WARN Rate limiter full, call is waiting` bursts around 10:00Z (03:00 PT), field `limiter=process_street` | The nightly Process Street sync's own pacer (6 calls per 10 s) delaying its calls; none fail. Until api 1.9.135 (2026-10-22) the message wrongly said "ClickUp rate limiter full" (25 lines on 10-17, then 3 a day); `limiter=clickup` waits are the real per-user ClickUp limiter (80 calls per 60 s) and are also benign unless a 429 follows. | [[Check-in 2026-10-19 - Weekend Quiet, Pool Warning, Sentry Empty]] (with its correction) |
 | `Process Street call` INFO lines and `sync scheduled`/`person-index sync completed` daily at ~10:00Z | The nightly sync. | same |
 | Occasional `slow statement` WARN (200 ms threshold) | Neon round trips (~50 ms each, about five per request). Only a pattern of them matters. | [[Findings - DB Connection Drops, Cold Starts and Latency]] |
 | First request after about 5+ idle minutes takes 1.5-2.5 s and returns 200 | Neon cold start (accepted by Boris on 2026-10-16). | same |
