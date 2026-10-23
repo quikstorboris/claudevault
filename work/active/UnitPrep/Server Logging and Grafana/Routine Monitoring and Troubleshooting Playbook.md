@@ -1,5 +1,6 @@
 ---
 date: 2026-10-19
+updated: 2026-10-23
 description: "Standing playbook for troubleshooting UnitPrep/Orchestrator: Claude can and should check Sentry and the server logs itself (where to look, in what order, known-benign patterns, what a real anomaly looks like), plus the twice-daily scheduled routine that does it unattended, with its guardrails for fixing."
 project: UnitPrep
 quarter: Q4-2026
@@ -22,7 +23,8 @@ Part of [[Server Logging and Grafana - Index]]. Written 2026-10-19 at Boris's re
 2. **The log files** `unitprep-api/logs/unitprep-api.DATE.log` (JSON lines, 7 days) and **`scripts/logcli.sh query '{job="unitprep-api", level="ERROR"}' --since=24h`** for Grafana Loki. Match a report to its lines with `request_id` (also the `x-request-id` response header).
 3. **Sentry** from the CLI: `sentry issue list quikstor-wf/orchestrator` and `.../orchestrator-ui` (**unresolved only by default**; add `--query "is:resolved"`), `sentry issue view <SHORT-ID>` for the stack trace and tags. Org `quikstor-wf`; projects `orchestrator` (Rust API) and `orchestrator-ui` (Next.js).
 4. **Grafana**: the `grafana` MCP server (sessions started in `unitprep-api`) or Chrome for dashboards and alert rules. Detail: [[Reading Logs - Tools and Recipes]], [[Sentry and Grafana Access for Claude]].
-5. **Freshness before debugging**: is the running server older than the code? (`cargo run` does not reload; the 2026-10-16 20:27Z errors came from a server older than its fix.) Are the local checkouts behind origin? (`git fetch`; on 2026-10-19 they were behind by 3 and 1.)
+5. **Dependencies and CI** (added 2026-10-23, in the same script; `--deps-only` runs just this part in about 15 s): `cargo audit` for the API, `npm audit` for the UI, review dates of dated advisory exceptions in `.cargo/audit.toml`, whether the UI's installed `node_modules` match `package-lock.json` (and Next.js specifically), and the latest GitHub Actions run per branch/tag in both repos (`gh`). See "Dependency and CI anomalies" below.
+6. **Freshness before debugging**: is the running server older than the code? (`cargo run` does not reload; the 2026-10-16 20:27Z errors came from a server older than its fix.) Are the local checkouts behind origin? (`git fetch`; on 2026-10-19 they were behind by 3 and 1.)
 
 Hard rules: everything above is **read-only**; never `source` `.env.local`; never paste a token into chat or the vault (names and scopes only); never switch branches, reset, stash or revert in the main checkouts (Boris's server runs from them and other sessions keep uncommitted work there; on 2026-10-19 both repos had an uncommitted "add facility" feature in progress).
 
@@ -42,10 +44,26 @@ Hard rules: everything above is **read-only**; never `source` `.env.local`; neve
 
 An **unresolved Sentry issue**; any **ERROR** log line; any **HTTP 5xx**; a **panic**; the DB message `expected to read 5 bytes` as an ERROR/500 **without** a `before_acquire` warning before it (the pre-fix pattern); the Sentry CLI not authenticated or Sentry/Loki unreachable (a blind check is **never** "all clear"); no readable logs at all while the server is supposed to be up.
 
+## Dependency and CI anomalies (added 2026-10-23)
+
+Why: on 2026-10-23 Next.js flagged a critical advisory in the browser, and the daily check could not have seen it (it only watched Sentry and logs). The same day the check was extended; its first run found that the UI checkout's `node_modules` was still on Next.js 16.4.0 while the lockfile (after a pull) pinned the fixed 16.4.3, so `npm audit` said "0 vulnerabilities" while the dev server ran the vulnerable code.
+
+Counted as anomalies (STATUS=ATTENTION):
+- any `cargo audit` vulnerability (exceptions in `.cargo/audit.toml` are applied automatically; unmaintained/unsound/yanked warnings are information only);
+- an advisory exception **past its `REVIEW by YYYY-MM-DD` date** (today: the `zip` extract exceptions, review **2026-11-16**; 14 days before, the report prints "due soon" as information);
+- any `npm audit` finding (preflight blocks on the same);
+- UI `node_modules` that differ from `package-lock.json` (`npm ls` problems, or Next.js installed != locked): fix is `npm ci` in `unitprep-ui` and a dev-server restart, which is **Boris's call** because it replaces the tree his server runs from;
+- the latest GitHub Actions run on any branch or tag in either repo concluded `failure`/`timed_out`;
+- the Sentry CLI login expiring within 7 days (it currently expires 2026-11-15);
+- any of the tools above unable to run (blind), never reported as clear.
+Information only: newer Next.js release available, still-running CI, unmaintained/unsound/yanked crates.
+
+**What the routine does about them**: logs and alerts, nothing more. It does **not** upgrade dependencies, edit lockfiles, run `npm ci`/`cargo update`, or change `.cargo/audit.toml`: a dependency change needs preflight, the e2e suite and a release, and the allowance decision is Boris's. A fix is a normal session (recipe: [[Session 2026-10-23 - Next.js 16.4.3 Security Upgrade]]).
+
 ## The routine (scheduled task `unitprep-anomaly-check`)
 
 - **When**: twice a day, 12 hours apart, outside working hours: **07:30 and 19:30 Pacific** (cron `30 7,19 * * *`, local time; scheduled tasks add a few minutes of jitter). Boris's days have run roughly 08:15-17:00 PT. **It only runs while the Claude desktop app is open and the laptop awake;** if the app was closed it runs at the next launch (the laptop also went into Modern Standby on 2026-10-16).
-- **What it does** (each run is a fresh session with no memory of this conversation, so its prompt is self-contained): reads this note; runs `anomaly_check.py --hours 14`; appends an entry to [[Routine Check Log]] (even when all clear); if `STATUS=ALL_CLEAR` stops; otherwise investigates each anomaly read-only (`sentry issue view`, the matching log lines by `request_id`, freshness, whether it is already known), classifies it (real bug in our code, environmental, test noise, already fixed in newer code), and acts per the policy below. If a push notification tool is available it alerts Boris for real findings.
+- **What it does** (each run is a fresh session with no memory of this conversation, so its prompt is self-contained): reads this note; runs `anomaly_check.py --hours 14` (which now includes the dependency and CI section); appends an entry to [[Routine Check Log]] (even when all clear); if `STATUS=ALL_CLEAR` stops; otherwise investigates each anomaly read-only (`sentry issue view`, the matching log lines by `request_id`, freshness, whether it is already known), classifies it (real bug in our code, environmental, test noise, already fixed in newer code), and acts per the policy below. If a push notification tool is available it alerts Boris for real findings.
 - **Fix policy (Boris: "fix them if anything comes up")**, with guardrails Claude chose because unattended code changes are risky:
   - It may fix only when the cause is clear from the stack trace and logs, the fix is small and local to our code, and it is not security, auth, a migration or anything data-destructive. Otherwise it writes findings and a proposed fix in the log and changes nothing.
   - **It never touches the main checkouts** (`~/Development/unitprep-api`, `unitprep-ui`): no edits, stash, reset, checkout, pull or commit there. It works in a **separate git worktree** under `~/Development/autofix/` on a new branch `auto-fix/<id>`, runs the repo's `scripts/preflight.sh` there, adds a regression test when feasible, and **commits locally only**.

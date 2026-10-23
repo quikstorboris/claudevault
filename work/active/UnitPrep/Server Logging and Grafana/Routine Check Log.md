@@ -47,3 +47,11 @@ Baseline run of `anomaly_check.py --hours 14 --include-resolved`: Sentry has 0 u
 ### 2026-10-22 07:45 PT | ALL_CLEAR | ANOMALIES=0
 
 `anomaly_check.py --hours 14`: Sentry auth OK (token good until 2026-11-15), 0 unresolved issues in both `orchestrator` and `orchestrator-ui`. 92 log lines / 0 requests in window (idle app, quiet log expected), 0 ERROR, 0 HTTP 5xx; information only: 0 pool `before_acquire` warnings, 1 slow statement, 38 ClickUp limiter waits. The 2026-10-21 16:10–16:14 UTC incident from the prior two entries is now outside the 14h window and did not recur. Freshness: `unitprep-api` 0 behind / 4 ahead of origin (same unpushed local commits as the 19:45 PT entry, 0 uncommitted files), `unitprep-ui` 0 behind/ahead, 0 uncommitted; the running server (last start 2026-10-21 23:18:16 UTC, 15.4h old) is on code older than the checkout's newest commit (2026-10-21T16:29:44 PT) — same known cargo-run-doesn't-reload situation, not an anomaly. No change made.
+
+### 2026-10-23 08:43 PT | ALL_CLEAR | ANOMALIES=0
+
+`anomaly_check.py --hours 14`: Sentry auth OK (token good until 2026-11-15), 0 unresolved issues in both `orchestrator` and `orchestrator-ui`. 17 log lines / 13 requests in window, 0 ERROR, 0 HTTP 5xx; information only: 0 pool `before_acquire` warnings, 0 slow statements, 0 limiter waits of any kind. Freshness: both repos at 0 behind/0 ahead of origin, 0 uncommitted files; the running server (last start 2026-10-23 15:40:38 UTC, 0.0h old) is fresh — no stale-server situation this run. No change made.
+
+### 2026-10-23 (manual) | extension of the check
+
+`anomaly_check.py` gained a DEPENDENCIES AND ADVISORIES section (cargo audit, npm audit, dated exceptions, npm-ls/lockfile mismatch incl. Next.js, GitHub Actions per branch/tag, Sentry token expiry < 7 days). First `--deps-only` run: api 0 vulnerabilities, ui 0 vulnerabilities by `npm audit`, **but 1 real anomaly: `unitprep-ui` node_modules still has Next.js 16.4.0 / vitest 5.0.2 while the lockfile (pulled 2026-10-23) pins 16.4.3 / 5.0.5, so the dev server is on the vulnerable Next.js until `npm ci` + restart**. zip exception review due 2026-11-16 (24 days). CI green in both repos.
