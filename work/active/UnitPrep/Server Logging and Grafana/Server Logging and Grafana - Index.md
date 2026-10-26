@@ -28,6 +28,7 @@ tags:
 | [[Check-in 2026-10-19 - Weekend Quiet, Pool Warning, Sentry Empty]] | Monday check: the logs were in Grafana (stale view), why the weekend looked silent, the `before_acquire` warning explained, Sentry holds only test issues, origin has moved ahead of the local checkouts. |
 | [[Sentry and Grafana Access for Claude]] | What Claude can reach and by which route (Sentry CLI works, no connectors in this session), Sentry token types from Sentry's docs, what was and was not tested. |
 | [[Observability Stack as a Demonstration of Skill]] | The honest portfolio view: the scale check (overkill for one user), why it was still worth it, skills demonstrated with evidence, quotable numbers, what not to overclaim. |
+| [[Incident 2026-10-23 - Alloy Stopped, Grafana Showed No Data]] | Grafana showed no logs: the Alloy shipper had been stopped 24 hours (own compose profile, not restarted). Found, fixed, verified; the routine could not see it; the Loki parse-error explained. |
 | [[Routine Monitoring and Troubleshooting Playbook]] | **Read this to troubleshoot UnitPrep.** Claude can and should check Sentry and the logs itself: the order of lookup, known-benign patterns, what a real anomaly looks like, the twice-daily routine and its fix guardrails. |
 | [[Routine Check Log]] | Append-only log written by the twice-daily routine (07:30 and 19:30 PT): status and findings per run. |
 
@@ -71,6 +72,7 @@ Outside this folder: [[Session 2026-10-16 (Part 2) — Sentry Setup, Log Correla
 - [x] Which background job fired every 4 hours from server start (the `:14:24` `before_acquire` warnings): confirmed 2026-10-21 from the code as the three vendor-registry refresh tasks (`vendor_format` x2, `vendor_file_meta`), which ticked together; removed the same day, see [[Latency Investigation 2026-10-20 - Round Trips vs Neon]]. These warnings should stop after the server restarts on the new build.
 - [ ] Prove Sentry delivery from the running API with a real or deliberate error (none since the last restart).
 - [ ] **Stale ClickUp panel query** in the repo's dashboard JSON (and the live dashboard): it still matches the old "ClickUp rate limiter full" text; since api 1.9.135 the message is `Rate limiter full` with a `limiter` field ([[Grafana Cloud Setup and Objects]]). Not fixed (frozen).
+- [ ] **Teach the routine to notice a stopped shipper** (check the `alloy` container and/or compare the newest local line with the newest Loki line): it read ALL_CLEAR while Grafana was empty for a day on 2026-10-22/23. Not done (frozen; Boris decides). Meanwhile start everything with `--profile dev --profile logs` ([[Incident 2026-10-23 - Alloy Stopped, Grafana Showed No Data]]).
 - [ ] **First routine runs** (first at 19:30 PT on 2026-10-19): check [[Routine Check Log]] for entries; confirm the task actually runs unattended and writes its log; review any `auto-fix/*` worktree under `~/Development/autofix/` before merging.
 - [ ] Commit and push the repo-side pieces (`unitprep-api/scripts/anomaly_check.py` and the new `CLAUDE.md` sections in both repos) once Boris wants them on GitHub; the routine uses the script from the main checkout.
 - [x] **Log-file retention is now a setting**, `LOG_RETENTION_DAYS` (default 7, 1-365), done 2026-10-22 at Boris's request after he asked why it was a constant; api commit `5a7b6eb`, local, **not pushed** ([[Server Logging Design and Decisions]]). The running server needs a restart to read it; set it under `api-dev` in `docker-compose.yml` for the container.
@@ -83,3 +85,7 @@ Fly.io specifics (`fly-log-shipper`, ephemeral disks, `fly logs` buffer, which r
 ## Related
 
 `work/Index.md` (the work index) · [[Key Decisions]] · [[Gotchas]]
+
+## Update 2026-10-26: stopped-shipper open item resolved
+
+Resolved as: `scripts/dev_up.sh` + `restart: unless-stopped` (cause) and a warnings-only DEV STACK STATE section in `anomaly_check.py` (no notifications, no action). The in-app heartbeat and admin-settings menu were deliberately not built. See [[Incident 2026-10-23 - Alloy Stopped, Grafana Showed No Data]].

@@ -40,6 +40,10 @@ Hard rules: everything above is **read-only**; never `source` `.env.local`; neve
 | Almost no log lines when nobody uses the app; no request lines | Idle, not broken. Compare the newest local line with the newest Loki line before suspecting Alloy. | same |
 | The five resolved Sentry issues from 2026-10-16 (`ORCHESTRATOR-1`, `ORCHESTRATOR-UI-1..4`) and `GET /grafana-live-check-*` 404s | Test events and marker requests. | [[Check-in 2026-10-19 - Weekend Quiet, Pool Warning, Sentry Empty]] |
 
+## Known failure mode: Grafana empty because the shipper is stopped (2026-10-23)
+
+If Grafana shows no data but `./logs` has fresh lines, check `docker compose ps -a` for `alloy-1` (it needs the `logs` profile: `docker compose --env-file .env.local --profile dev --profile logs up -d`). The anomaly script does **not** detect this (it reads local files and Sentry only). Full account: [[Incident 2026-10-23 - Alloy Stopped, Grafana Showed No Data]]. Separately, Loki's error "queries require at least one regexp or equality matcher that does not have an empty-compatible value" just means a query has no non-empty label filter (use `{job="unitprep-api"}`).
+
 ## What a real anomaly looks like
 
 An **unresolved Sentry issue**; any **ERROR** log line; any **HTTP 5xx**; a **panic**; the DB message `expected to read 5 bytes` as an ERROR/500 **without** a `before_acquire` warning before it (the pre-fix pattern); the Sentry CLI not authenticated or Sentry/Loki unreachable (a blind check is **never** "all clear"); no readable logs at all while the server is supposed to be up.
@@ -82,3 +86,7 @@ Information only: newer Next.js release available, still-running CI, unmaintaine
 ## Related
 
 [[Server Logging and Grafana - Index]] · [[Routine Check Log]] · [[Sentry and Grafana Access for Claude]] · [[Reading Logs - Tools and Recipes]] · [[Gotchas]] · [[Patterns]]
+
+## `WARNINGS=n` line (added 2026-10-26)
+
+The report now ends with `WARNINGS=<n>` after `STATUS`. It comes from the warnings-only DEV STACK STATE section (API not answering, a dev container not running, last request age). It is informational: do not treat it as an anomaly, do not notify, do not fix anything because of it. Boris said he does not need it checked. Start everything with `scripts/dev_up.sh`.
