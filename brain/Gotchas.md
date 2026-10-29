@@ -8,6 +8,15 @@ tags:
 
 Things that have bitten before and will bite again.
 
+## Running WSL tooling from a Windows-started Claude session: Windows `npx`, empty `$VAR`, self-matching `pgrep`, missing `om` (2026-10-29)
+
+Four traps hit in one session (details in [[Frontend Performance - Decisions and Discussion]]):
+- `wsl.exe -d Ubuntu -- bash -lc '...'` is a **non-interactive login shell without nvm**, so `npx`/`node` resolve to the **Windows** install (`/mnt/c/Program Files/nodejs`), which then fails with `'next' is not recognized` / "UNC paths are not supported". Prefix `export PATH=/home/bmaksimov/.nvm/versions/node/<version>/bin:$PATH` and call `node node_modules/next/dist/bin/next ...` directly.
+- Unquoted `$HOME`/`$B` inside the single-quoted command came through empty from Git Bash; use absolute paths.
+- `nohup cmd &` inside `bash -lc '(...)'` dies with the shell; run the long job as the foreground command of a background task. A wait-loop with `pgrep -f "next build"` matches its **own** command line and never ends.
+- The vault's `om` MCP only loads where a `.mcp.json` registers it; the UI repo's points at the WSL path (`/mnt/c/...`), so a Windows-cwd session had none. Fixed with `C:\Users\bmaksimov\.mcp.json` (Windows path) plus `.om-project`; loads on next session start. The vault itself is plain files and stays readable by Read/Grep regardless.
+- Also: never build into the real checkout's `.next` (Boris's dev container serves it); build in a hard-linked temp copy.
+
 ## HIGH IMPORTANCE, DEFERRED: ClickUp's rate limiter, task cache and background-copy runner live inside one API process. Fix BEFORE running more than one instance
 
 > [!danger] Trigger: when work starts on cloud deployment (e.g. Fly.io), or on running more than one API instance for any reason
@@ -52,6 +61,10 @@ Things that have bitten before and will bite again.
 **Still unexplained:** why a few discarded connections became a full 10 s pool timeout rather than quick replacements. If a pool timeout recurs *without* the `unnamed prepared statement` warning, investigate that separately (pool exhaustion / Neon wake), not the ping.
 
 **How to apply:** under this pooler use only constructs that are correct per transaction: `SET LOCAL`, schema-qualified names, simple-protocol pings. Related: [[Findings - DB Connection Drops, Cold Starts and Latency]], [[Dev Principles]] #12-13.
+
+## `ClickUp rate limiter full` at 03:00 PT was the Process Street sync pacer, not ClickUp (2026-10-22)
+
+The shared `RateLimiter` hard-coded "ClickUp" in its warning, but `process_street/client.rs` also uses it (6 calls per 10 s, `limit":6,"window_secs":10` in the line). The nightly 10:00Z sync therefore logged 30-40 lines that looked like ClickUp throttling; they were the deliberate pacer, benign. Fixed in api 1.9.135: constant message `Rate limiter full, call is waiting` plus a `limiter` field (`clickup` or `process_street`); `scripts/anomaly_check.py` counts them separately and lists pre-1.9.135 lines as unlabelled. The real Process Street warning is a 429, counted separately. Related: [[Server Logging and Grafana - Index]].
 
 ## A `.git` folder found inside a raw file-mirror backup may be empty
 

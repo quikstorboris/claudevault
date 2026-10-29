@@ -8,6 +8,10 @@ tags:
 
 Architectural or workflow decisions worth recalling. Link to the full [[Decision Record]] when one exists.
 
+## UnitPrep frontend performance direction (2026-10-29)
+
+Boris: after the backend latency and Neon-compute work, speed up `unitprep-ui` in phases, one phase and one manageable chunk at a time. Decided: **measure first (Phase 0), then fix the serial load chain by hand (Phase 1), then adopt TanStack Query for the shared reads only (Phase 2).** TanStack Query was chosen over an in-house cache after the in-house estimate proved to cover only the happy path (dedupe, Strict Mode, cancellation, invalidation are the hard parts). Out of scope by decision: micro-optimising Rust, keep-warm, making ClickUp/PS faster, more observability, cloud move. Request count is a latency lever, not a Neon-compute lever (compute is billed while awake). Full trail: [[Frontend Performance - Decisions and Discussion]]; plan: [[Frontend Performance Plan]].
+
 ## UnitPrep auth architecture (2026-07-20, final)
 
 Self-hosted WebAuthn/TOTP for identity, opaque session-token cookies (not JWT, not DPoP), Postgres via Neon with row-level security, a single Admin role for v1 (deliberately narrowed down from a four-role/Groups design once it was clear that would be built ahead of actual need). Full detail and rationale in [[Architecture]] (`work/active/UnitPrep/Auth & Persistence/`). Database schema (7 tables, RLS pass) built and verified on Neon dev as of 2026-07-21; Rust wiring still pending. See [[Collaboration Style]] for how this decision got made — Boris supplied several of the deciding factors himself.
