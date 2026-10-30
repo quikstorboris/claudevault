@@ -17,7 +17,9 @@ Boris's call (2026-10-29): after the backend latency and Neon-compute work, the 
 
 ## Status (as of 2026-10-29)
 
-**Phase 0 in progress.** Nothing in `unitprep-ui` has been changed yet; the checkout was clean on `main` (`cf3fa86`, v1.6.106) when the review ran. The plan was approved in outline; Boris's only open choice (cache approach) is settled, see decisions.
+**Phases 1, 2 and 3 are DONE and released (api v1.9.137; ui v1.6.107 to v1.6.111); Phase 0 is partly done (bundle baseline, two screens' waterfalls, the whoami analysis); Phases 4 and 5 are not started** and need real large data or are low value (see the progress log below). Working mode since 2026-10-29: Boris authorised autonomous continuation ("proceed down the list in chunks, commit and push coherent chunks, keep the vault updated") and left; the stack is on `main` in both repos. **Open items for Boris:** apply migration `20261029160000` to **prod** by hand before deploying api 1.9.137; `npm install` in native UI checkouts; run `npm run test:e2e` somewhere Chromium works (it cannot run in this WSL). Cache approach settled: TanStack Query, see decisions.
+
+**Phase status:** 0 partial · 1 done (1.1 deliberately skipped) · 2 done for the hot reads · 3 done (3.2 as in-shell error and loading boundaries) · 4 not started · 5 not started.
 
 ## Working agreement
 
@@ -118,7 +120,18 @@ Boris's call (2026-10-29): after the backend latency and Neon-compute work, the 
   - **Measured in a production build in Brave (warm):** Clients list to a client page = **one request** (company detail); client to facility = **two** (facility and policies; the company is reused); back to the company page = **zero**; the dedup page asks for the company once and fills its facility picker from it (no list request anywhere).
   - **Not migrated, deliberately:** `whoami` (module store with the sign-in gates, already once per page load), the ClickUp connection store, and the tool-session hooks (workflows, not cached reads).
   - **Playwright could not be run on this machine** (Chromium in WSL lacks `libnspr4` and friends; fixing needs `sudo apt` which is not available); the E2E fixture `seedClient` was updated (it now also mocks `GET /clients/<id>`) and every client-page spec goes through it, but those specs are unrun since 1.6.108. **Worth running `npm run test:e2e` where Chromium works.**
-- Results for the remaining 0.1 screens and 0.3 are appended here as each chunk finishes (Phase 0 paused; Phases 1-2 took priority because the evidence already pointed there). **Next:** Phase 3 (real links, loading/error boundaries, hidden-tab poll pause), then re-measure the remaining screens, then Phase 4 only if profiling warrants.
+- **PHASE 3 DONE, released `unitprep-ui` v1.6.111 (`2cfb3a7`).**
+  - Company cards on the Clients page are **real `<Link>`s** (`/clients/<id>/info`; verified in Brave: 23 links, click navigates; the kebab menu stays a sibling). The remaining `router.push`/`replace` calls are all post-action redirects, which is correct.
+  - New **`app/(app)/error.tsx`** (error boundary inside the shell: nav stays, Sentry-reported, Try again and Back to Clients) and **`app/(app)/loading.tsx`**. One test for the error boundary.
+  - **ClickUp Copy poll (`useCopyJobs`): slowed to 15 s in a hidden tab, NOT paused.** Pausing would have broken the feature's purpose (leave the tab during a big copy and still get the browser notification at the end); it also catches up at once on `visibilitychange`. Two tests. (The plan said "pause"; this is the better reading of the same goal.)
+- **Considered and deliberately not done (as of the end of the 2026-10-29 run):**
+  - **Facility tab hooks to the query cache** (`useElavonTab`, `useFacilityUsers`, Onboarding Work feeds): each is a stateful hook with its own mutation flows; the gain is only instant tab revisits within 30 s, against real regression risk. Revisit if tab switching is felt to be slow. Their keys would nest under `queryKeys.company(...)` so the write-event safety net would cover them automatically.
+  - **Folding the ClickUp connection call into `whoami`** (saves one parallel request per full page load, about 200 ms off nothing critical now): not worth widening `whoami`.
+  - **`whoami` through the query cache / non-blocking shell:** see Phase 1 note; security gates win.
+  - **Company detail on the backend:** already runs its five reads in parallel (`try_join!`), each in its own RLS transaction; the 240-570 ms is mostly cold pooled connections to Neon, not statement count. Left alone per the standing "no micro-optimising Rust" decision.
+  - **Phase 4 (large scan/dedup lists, off-main-thread parsing):** needs a real large report to profile; synthetic jsdom timings would say nothing about the browser. Not started. **Needs from Boris: a large real dedup/scan session to profile** (or say to skip).
+  - **Phase 5.1 (bundle budget in `preflight.sh`):** the baseline is recorded above (about 625 KB raw / 194 KB gzip shared; heaviest route 227 KB gzip). A preflight build would clobber the dev server's `.next`, so it needs a temp-copy build step; low value while no route is outsized.
+- Results for the remaining Phase 0 screens (facility page, dedup results, Onboarding Work tab, admin users) were never measured as separate chunks; the changes since touch all of them through the shared cache, so a fresh baseline run would be more useful than back-filling the old one.
 
 ## Related
 
