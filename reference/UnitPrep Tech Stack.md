@@ -11,7 +11,7 @@ Built 2026-10-01 from a full scan of `unitprep-api` (v1.9.55) and `unitprep-ui` 
 
 **STANDING RULE: whenever a new tool, library, service or infrastructure piece is introduced to either repo, add a row here in the same session and bump "Last updated" below.** The rule is also recorded in both repos' `CLAUDE.md` and in Boris's auto-memory.
 
-**Last updated:** 2026-10-16 (Sentry error reporting: `sentry` crate, `@sentry/nextjs`, Sentry cloud + CLI; api v1.9.130 / ui v1.6.100). Earlier: 2026-10-16 (log-reading tools: `logcli`, `mcp-grafana`; server logging: JSON via tracing-subscriber `json`, `tracing-appender` rolling files, Grafana Alloy, Grafana Cloud Loki). Earlier: 2026-10-05 (gzip response compression via tower-http `compression-gzip`; shared in-house outbound-HTTP retry/timeout helper `integrations::http`, no new crate). Earlier: 2026-10-02 (ClickUp integration + per-user permission grants). Current as of `unitprep-api` v1.9.65 (pending) / `unitprep-ui` v1.6.55.
+**Last updated:** 2026-10-29 (TanStack Query added to the frontend; ui v1.6.109). Earlier: 2026-10-16 (Sentry error reporting: `sentry` crate, `@sentry/nextjs`, Sentry cloud + CLI; api v1.9.130 / ui v1.6.100). Earlier: 2026-10-16 (log-reading tools: `logcli`, `mcp-grafana`; server logging: JSON via tracing-subscriber `json`, `tracing-appender` rolling files, Grafana Alloy, Grafana Cloud Loki). Earlier: 2026-10-05 (gzip response compression via tower-http `compression-gzip`; shared in-house outbound-HTTP retry/timeout helper `integrations::http`, no new crate). Earlier: 2026-10-02 (ClickUp integration + per-user permission grants). Current as of `unitprep-api` v1.9.65 (pending) / `unitprep-ui` v1.6.55.
 
 **Caveats for the presenter**
 - There is **no OAuth2/OIDC** for sign-in. Auth is passkeys (WebAuthn) plus TOTP. The only OAuth is the *outbound* Dropbox OAuth2 flow.
@@ -58,6 +58,7 @@ Built 2026-10-01 from a full scan of `unitprep-api` (v1.9.55) and `unitprep-ui` 
 | Tool | Area | What it is / why we picked it |
 |---|---|---|
 | **Next.js 16** (App Router) | Framework | Routing, layouts, dev/build server.<br>• Route groups split public (login/invite) from app-shell pages<br>• `proxy.ts` = coarse session-cookie gate, signed-out users never see protected UI |
+| **TanStack Query 5** (`@tanstack/react-query`, pinned exact; added 2026-10-29, `unitprep-ui` 1.6.109) | Frontend data cache | Shared client-side cache for API reads: in-flight de-duplication, stale-while-revalidate, explicit invalidation after writes. Defaults set in `lib/queryClient.ts` to conserve Neon compute (30 s stale time, no refetch on focus or reconnect, no retries); emptied on sign-out or user change (`components/QueryProvider.tsx`). Chosen over an in-house cache; see vault `work/active/UnitPrep/Frontend Performance/`. |
 | **React 19** | UI | Components plus custom hooks (abortable ops, infinite log feeds, save status). |
 | **TypeScript 5** | Language | Strict typing, shared with backend via `ts-rs` types. |
 | **Tailwind CSS 4** (PostCSS) | Styling | Utility-first dark theme.<br>• No separate stylesheet to maintain<br>• Consistent design tokens |
