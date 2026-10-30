@@ -46,6 +46,21 @@ Part of [[Frontend Performance Plan]]. Static read of `~/Development/unitprep-ui
 - `useClickUpAccess` does **not** fetch; it reads the permission off the already-loaded user. (It was suspected of being a per-mount fetch.)
 - Only two `setInterval`s exist (`useCopyJobs`, `useAbortableOperation`) plus the visibility-aware `SyncButton`.
 
+## Resolution (as of 2026-10-29, end of the autonomous run; details in [[Frontend Performance Plan]])
+
+| # | Outcome |
+|---|---|
+| F1 | `whoami` itself fixed (6 statements to 2, api 1.9.137). The shell still waits for it **on purpose** (TOTP and step-up gates); a non-blocking shell was rejected for a small saving against real security cost. |
+| F2 | **Fixed** (ui 1.6.108): the client layout takes the name from company detail and starts it at once; about 1.2-1.5 s to about 0.4 s warm. |
+| F3 | **Fixed for the hot reads** (ui 1.6.109, 1.6.110): TanStack Query cache for company, facility, policies, directory and filter options. Not migrated: whoami, ClickUp connection, tool-session hooks, facility tab hooks (by choice). |
+| F4 | **Fixed** (1.6.110): the unfiltered list is retired, its module deleted. |
+| F5 | Improved as a side effect of F2 and F3 (company reused when switching facilities; revisits instant). |
+| F6 | **Fixed** (1.6.111): company cards are real links. |
+| F7 | **Not started**: needs a real large report to profile. |
+| F8 | Measured: not a problem (about 194 KB gzip shared floor). Sentry's exact share still unmeasured. |
+| F9 | Hidden-tab poll slowed (not paused, deliberately); in-shell `error.tsx` and `loading.tsx` added (1.6.111). React Compiler untouched. |
+| F10 / F11 | F11 (ClickUp prefetch on every company view) **fixed** (1.6.107, hover only). F10 (connection call) correct by design, left alone. |
+
 ## Related
 
 [[Frontend Performance Plan]], [[Frontend Performance - Decisions and Discussion]], [[Latency Investigation 2026-10-20 - Round Trips vs Neon]]
