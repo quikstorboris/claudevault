@@ -136,3 +136,9 @@ Boris's call (2026-10-29): after the backend latency and Neon-compute work, the 
 ## Related
 
 [[Production Readiness Checklist]], [[UnitPrep Tech Stack]]
+
+## Follow-up 2026-10-30: E2E run and prod migration status
+
+- **E2E: 14/14 Playwright specs pass** on ui 1.6.111 (13.7 s). WSL had no sudo, so the missing Chromium libraries (`libnspr4`, `libnss3`, `libasound2t64`) were fetched with `apt-get download` and unpacked with `dpkg -x` into `~/.cache/chromium-libs`; run with `LD_LIBRARY_PATH=~/.cache/chromium-libs/usr/lib/x86_64-linux-gnu`. The same technique works for any future no-sudo shared-library gap.
+- **Native UI checkout** already had `@tanstack/react-query` installed (WSL checkout).
+- **Prod DB (checked read-only with `scripts/prod_db_status.sh`):** latest applied is `20261013120000`; six local migrations are pending: `20261014120000`, `...160000`, `...180000`, `...200000`, `...220000` and `20261029160000` (the whoami function). So five migrations beyond this workstream's are also unapplied. Not applied by Claude: the prod script is interactive by design and applying prod is Boris's call.
