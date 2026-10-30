@@ -56,7 +56,7 @@ Part of [[Frontend Performance Plan]]. Static read of `~/Development/unitprep-ui
 | F4 | **Fixed** (1.6.110): the unfiltered list is retired, its module deleted. |
 | F5 | Improved as a side effect of F2 and F3 (company reused when switching facilities; revisits instant). |
 | F6 | **Fixed** (1.6.111): company cards are real links. |
-| F7 | **Not started**: needs a real large report to profile. |
+| F7 | **Skipped by decision (Boris, 2026-10-30)**: no real large report to profile; reopen only if a big report ever feels slow. |
 | F8 | Measured: not a problem (about 194 KB gzip shared floor). Sentry's exact share still unmeasured. |
 | F9 | Hidden-tab poll slowed (not paused, deliberately); in-shell `error.tsx` and `loading.tsx` added (1.6.111). React Compiler untouched. |
 | F10 / F11 | F11 (ClickUp prefetch on every company view) **fixed** (1.6.107, hover only). F10 (connection call) correct by design, left alone. |
